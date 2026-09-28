@@ -4,17 +4,123 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PACIK.LV</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      color: #111;
+    }
+
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 20px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 560px;
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 10px 35px rgba(0,0,0,.12);
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 42px;
+    }
+
+    p {
+      color: #555;
+      line-height: 1.5;
+    }
+
+    input {
+      width: 100%;
+      padding: 16px;
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      margin-top: 12px;
+      border: 0;
+      border-radius: 10px;
+      background: #111;
+      color: white;
+      font-size: 17px;
+      cursor: pointer;
+    }
+
+    #result {
+      display: none;
+      margin-top: 22px;
+      padding: 18px;
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+  </style>
 </head>
 
 <body>
-  <h1>Uzzini, par cik vari pārdot savu īpašumu.</h1>
 
-  <p>
-    Saņem bezmaksas aptuveno tirgus vērtējumu dažu minūšu laikā.
-  </p>
+  <div class="hero">
+    <div class="card">
 
-  <input type="text" placeholder="Ievadi īpašuma adresi">
+      <h1>PACIK.LV</h1>
+      <h2>Uzzini sava īpašuma aptuveno vērtību</h2>
 
-  <button>Uzzināt vērtību</button>
+      <p>
+        Ievadi īpašuma adresi un sper pirmo soli,
+        lai noskaidrotu, par cik vari pārdot savu īpašumu.
+      </p>
+
+      <input
+        id="address"
+        type="text"
+        placeholder="Piemēram: Brīvības iela 100, Rīga"
+      >
+
+      <button onclick="checkAddress()">
+        Uzzināt vērtību
+      </button>
+
+      <div id="result">
+        <strong>Adrese saņemta!</strong>
+        <p id="addressResult"></p>
+        <p>
+          Nākamajā solī ievāksim informāciju par īpašumu,
+          lai noteiktu tā aptuveno vērtību.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function checkAddress() {
+      const address = document.getElementById("address").value.trim();
+
+      if (!address) {
+        alert("Lūdzu, ievadi īpašuma adresi.");
+        return;
+      }
+
+      document.getElementById("addressResult").textContent = address;
+      document.getElementById("result").style.display = "block";
+    }
+  </script>
+
 </body>
 </html>
