@@ -1,3 +1,348 @@
-<!DOCTYPE html><html lang="lv"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>PACIK.LV — Uzzini sava īpašuma vērtību </title><style>* { box-sizing: border-box; } body { margin: 0; font-family: Arial, sans-serif; background: #f5f5f5; color: #111; } .hero { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 30px 20px; } .card { width: 100% ; max-width: 580px; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 35px rgba (0,0,0,0.12); } h1 { margin: 0 0 12px; font-size: 42px; } h2 { margin-bottom: 10px; } p { color: #555; line-height: 1.5; } .progress { font-size: 14px; color: #777; margin-bottom: 20px; } input, select { width: 100%; padding: 16px; margin-top: 12px; border: 1px solid #ccc; border-radius: 10px; font-size: 16px; background: white; } button { width: 100%; padding: 16px; margin-top: 16px; border: 0; border-radius: 10px; background: #111; color: white; font-size: 17px; cursor: pointer; } button:hover { opacity: .9; } .secondary { background: #eee; color: #111; } #step2, #step3 { display: none; } .address- box { background: #f3f3f3; padding: 14px; border-radius: 10px; margin: 15px 0; font-weight: bold; } .success { text-align: center; padding: 20px 0; }</style></head><body><div class="hero"><div class="card"><div id="step1"><div class="progress">1. solis no 2</div><h1>PACIK.LV </h1><h2>Uzzini sava īpašuma aptuveno vērtību</h2><p> Ievadi īpašuma adresi un sper pirmo soli, lai noskaidrotu, par cik vari pārdot savu īpašumu. </p><input id="address" type="text" placeholder=" Piemēram: Brīvības iela 100, Rīga"><button onclick="nextStep()"> Turpināt </button></div><div id="step2"><div class="progress">2. solis no 2</div><h1>PACIK.LV</h1><h2> Pastāsti nedaudz par īpašumu</h2><p>Adrese:</p><div id="selectedAddress" class="address-box"></div><select id="propertyType"><option value=""> Īpašuma tips </option><option> Dzīvoklis </option><option> Privātmāja </option><option> Zeme </option><option> Komercīpašums </option><option> Cits </option></select><input id="area" type="number " placeholder=" Platība m2"><select id ="condition"><option value=""> Īpašuma stāvoklis</option><option> Jauns / renovēts </option><option> Labs </option><option> Vidējs </option><option> Nepieciešams remonts </option></select><input id="phone" type="tel" placeholder=" Tālruņa numurs *"><input id="name" type="text" placeholder=" Vārds (nav obligāti) "><input id="email" type="email" placeholder=" E-pasts (nav obligāti)"><select id="sellingTime"><option value=""> Kad apsver īpašuma pārdošanu? </option><option> Tikai interesējos </option><option> Apsveru pārdošanu (3–6 mēneši) </option><option> Vēlos pārdot tuvākajā laikā </option></select><button onclick="submitForm()"> Uzzināt vērtību </button><button class="secondary" onclick="backStep()"> Atpakaļ </button></div>
-<div id="step3" class="success">
-<h 1>PACIK.LV</h1><h2>Paldies!</h2><p> Informācija par īpašumu ir saņemta. </p><p> Nākamais solis būs aprēķināt īpašuma aptuveno tirgus vērtību. </p></div></div></div><script> function nextStep() { const address = document.getElementById("address").value.trim(); if (!address) { alert(" Lūdzu, ievadi īpašuma adresi."); return; } document.getElementById("selectedAddress").textContent = address; document.getElementById("step1").style.display = "none"; document.getElementById("step2").style.display = "block"; } function backStep() { document.getElementById("step2").style.display = "none"; document.getElementById("step1").style.display = "block"; } function submitForm() { const propertyType = document.getElementById("propertyType").value; const area = document.getElementById("area").value; const condition = document.getElementById("condition").value; const phone = document.getElementById("phone").value.trim(); const sellingTime = document.getElementById("sellingTime").value; if (!propertyType) { alert("Lūdzu, izvēlies īpašuma tipu."); return; } if (!area) { alert(" Lūdzu, ievadi īpašuma platību."); return; } if (!condition) { alert("Lūdzu, izvēlies īpašuma stāvokli."); return; } if (!phone) { alert("Lūdzu, ievadi tālruņa numuru."); return; } if (!sellingTime) { alert("Lūdzu, izvēlies pārdošanas laiku."); return; } document.getElementById("step2").style.display = "none"; document.getElementById("step3").style.display = "block"; } </script></body></html>```
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>PACIK.LV — Uzzini sava īpašuma vērtību</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      color: #111;
+    }
+
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 20px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 580px;
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.12);
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 42px;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    p {
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .progress {
+      font-size: 14px;
+      color: #777;
+      margin-bottom: 20px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 16px;
+      margin-top: 12px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 16px;
+      background: white;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      margin-top: 16px;
+      border: 0;
+      border-radius: 10px;
+      background: #111;
+      color: white;
+      font-size: 17px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .secondary {
+      background: #eee;
+      color: #111;
+    }
+
+    #step2,
+    #step3 {
+      display: none;
+    }
+
+    .address-box {
+      background: #f3f3f3;
+      padding: 14px;
+      border-radius: 10px;
+      margin: 15px 0;
+      font-weight: bold;
+    }
+
+    .success {
+      text-align: center;
+      padding: 20px 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="hero">
+    <div class="card">
+
+      <!-- 1. SOLIS -->
+      <div id="step1">
+
+        <div class="progress">
+          1. solis no 2
+        </div>
+
+        <h1>PACIK.LV</h1>
+
+        <h2>
+          Uzzini sava īpašuma aptuveno vērtību
+        </h2>
+
+        <p>
+          Ievadi īpašuma adresi un sper pirmo soli,
+          lai noskaidrotu, par cik vari pārdot savu īpašumu.
+        </p>
+
+        <input
+          id="address"
+          type="text"
+          placeholder="Piemēram: Brīvības iela 100, Rīga"
+        >
+
+        <button onclick="nextStep()">
+          Turpināt
+        </button>
+
+      </div>
+
+
+      <!-- 2. SOLIS -->
+      <div id="step2">
+
+        <div class="progress">
+          2. solis no 2
+        </div>
+
+        <h1>PACIK.LV</h1>
+
+        <h2>
+          Pastāsti nedaudz par īpašumu
+        </h2>
+
+        <p>Adrese:</p>
+
+        <div
+          id="selectedAddress"
+          class="address-box">
+        </div>
+
+        <select id="propertyType">
+          <option value="">Īpašuma tips</option>
+          <option value="Dzīvoklis">Dzīvoklis</option>
+          <option value="Privātmāja">Privātmāja</option>
+          <option value="Zeme">Zeme</option>
+          <option value="Komercīpašums">Komercīpašums</option>
+          <option value="Cits">Cits</option>
+        </select>
+
+        <input
+          id="area"
+          type="number"
+          min="1"
+          placeholder="Platība m²"
+        >
+
+        <select id="condition">
+          <option value="">Īpašuma stāvoklis</option>
+          <option value="Jauns / renovēts">Jauns / renovēts</option>
+          <option value="Labs">Labs</option>
+          <option value="Vidējs">Vidējs</option>
+          <option value="Nepieciešams remonts">Nepieciešams remonts</option>
+        </select>
+
+        <input
+          id="phone"
+          type="tel"
+          placeholder="Tālruņa numurs *"
+        >
+
+        <input
+          id="name"
+          type="text"
+          placeholder="Vārds (nav obligāti)"
+        >
+
+        <input
+          id="email"
+          type="email"
+          placeholder="E-pasts (nav obligāti)"
+        >
+
+        <select id="sellingTime">
+          <option value="">
+            Kad apsver īpašuma pārdošanu?
+          </option>
+
+          <option value="Tikai interesējos">
+            Tikai interesējos
+          </option>
+
+          <option value="Apsveru pārdošanu (3–6 mēn.)">
+            Apsveru pārdošanu (3–6 mēn.)
+          </option>
+
+          <option value="Vēlos pārdot tuvākajā laikā">
+            Vēlos pārdot tuvākajā laikā
+          </option>
+        </select>
+
+        <button onclick="submitForm()">
+          Uzzināt vērtību
+        </button>
+
+        <button
+          class="secondary"
+          onclick="backStep()">
+          Atpakaļ
+        </button>
+
+      </div>
+
+
+      <!-- APSTIPRINĀJUMS -->
+      <div id="step3" class="success">
+
+        <h1>PACIK.LV</h1>
+
+        <h2>Paldies!</h2>
+
+        <p>
+          Informācija par īpašumu ir saņemta.
+        </p>
+
+        <p>
+          Nākamais solis būs aprēķināt īpašuma
+          aptuveno tirgus vērtību.
+        </p>
+
+      </div>
+
+    </div>
+  </div>
+
+
+  <script>
+
+    function nextStep() {
+
+      const address =
+        document.getElementById("address").value.trim();
+
+      if (!address) {
+        alert("Lūdzu, ievadi īpašuma adresi.");
+        return;
+      }
+
+      document.getElementById("selectedAddress").textContent =
+        address;
+
+      document.getElementById("step1").style.display =
+        "none";
+
+      document.getElementById("step2").style.display =
+        "block";
+    }
+
+
+    function backStep() {
+
+      document.getElementById("step2").style.display =
+        "none";
+
+      document.getElementById("step1").style.display =
+        "block";
+    }
+
+
+    function submitForm() {
+
+      const propertyType =
+        document.getElementById("propertyType").value;
+
+      const area =
+        document.getElementById("area").value;
+
+      const condition =
+        document.getElementById("condition").value;
+
+      const phone =
+        document.getElementById("phone").value.trim();
+
+      const sellingTime =
+        document.getElementById("sellingTime").value;
+
+
+      if (!propertyType) {
+        alert("Lūdzu, izvēlies īpašuma tipu.");
+        return;
+      }
+
+      if (!area) {
+        alert("Lūdzu, ievadi īpašuma platību.");
+        return;
+      }
+
+      if (!condition) {
+        alert("Lūdzu, izvēlies īpašuma stāvokli.");
+        return;
+      }
+
+      if (!phone) {
+        alert("Lūdzu, ievadi tālruņa numuru.");
+        return;
+      }
+
+      if (!sellingTime) {
+        alert("Lūdzu, izvēlies, kad apsver īpašuma pārdošanu.");
+        return;
+      }
+
+
+      document.getElementById("step2").style.display =
+        "none";
+
+      document.getElementById("step3").style.display =
+        "block";
+    }
+
+  </script>
+
+</body>
+</html>
