@@ -291,7 +291,7 @@
     }
 
 
-    function submitForm() {
+    async function submitForm() {
 
       const propertyType =
         document.getElementById("propertyType").value;
@@ -335,6 +335,25 @@
       }
 
 
+try {
+  if (typeof window.savePacikSubmission !== "function") {
+    throw new Error("Firebase savienojums nav gatavs.");
+  }
+
+  await window.savePacikSubmission({
+    propertyType: propertyType,
+    area: Number(area),
+    condition: condition,
+    phone: phone,
+    sellingTime: sellingTime
+  });
+
+} catch (error) {
+  console.error("Saglabāšanas kļūda:", error);
+  alert("Neizdevās saglabāt pieteikumu. Lūdzu, mēģini vēlreiz.");
+  return;
+}
+
       document.getElementById("step2").style.display =
         "none";
 
@@ -344,5 +363,32 @@
 
   </script>
 
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+   apiKey: "AIzaSyA4fnm5B6ig6m5z3InVVltsKmuMFtxyO_s",
+    authDomain: "pacik-lv.firebaseapp.com",
+    projectId: "pacik-lv",
+    storageBucket: "pacik-lv.firebasestorage.app",
+    messagingSenderId: "581028202745",
+    appId: "1:581028202745:web:33a5a2aec1bcf8622cfa28"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.savePacikSubmission = async function(data) {
+    const docRef = await addDoc(collection(db, "submissions"), {
+      ...data,
+      createdAt: serverTimestamp(),
+      source: "PACIK.LV"
+    });
+    return docRef.id;
+  };
+</script>
+
+  
 </body>
 </html>
