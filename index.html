@@ -291,7 +291,8 @@
     }
 
 
-    async function submitForm() {
+ async function submitForm() {
+    const address = document.getElementById("address").value.trim();
 
       const propertyType =
         document.getElementById("propertyType").value;
@@ -341,6 +342,7 @@ try {
   }
 
   await window.savePacikSubmission({
+    address: address,
     propertyType: propertyType,
     area: Number(area),
     condition: condition,
