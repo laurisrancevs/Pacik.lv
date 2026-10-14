@@ -73,16 +73,12 @@ def search_address(q: str = Query(min_length=3)):
 
     for row in addresses:
         address = (
-            row.get("Adrese")
-            or row.get("ADRESE")
-            or row.get("adrese")
-            or ""
-        )
+            address = row.get("STD", "")
 
         if query in address.casefold():
             results.append({
                 "address": address,
-                "object_code": row.get("Objekta kods", "")
+                "object_code": row.get("KODS", "")
             })
 
         if len(results) >= 10:
