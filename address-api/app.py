@@ -88,3 +88,9 @@ def search_address(q: str = Query(min_length=3)):
                 break
 
     return {"query": q, "results": results}
+@app.get("/sample")
+def sample():
+    if not addresses:
+        raise HTTPException(status_code=503, detail="Adrešu dati nav ielādēti")
+
+    return addresses[0]
