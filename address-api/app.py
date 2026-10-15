@@ -576,9 +576,13 @@ def valuation(
                 ""
             ),
             "building_year": row.get(
-                "(B) Ekspluatācijas uzsākšanas gads(saraksts)_DTG_Z_E",
-                ""
-            )
+    "(B) Ekspluatācijas uzsākšanas gads(saraksts)_DTG_Z_E",
+    ""
+),
+"building_material": row.get(
+    "(B) Ārsienu un karkasu materiāls(saraksts)_DTG_Z_E",
+    ""
+)
         }
 
     def is_duplicate(item, items):
