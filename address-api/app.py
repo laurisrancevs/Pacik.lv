@@ -307,7 +307,18 @@ def search_transactions(
 # ---------------------------------------------------------
 # VALUATION
 # ---------------------------------------------------------
+@app.get("/transaction-columns")
+def transaction_columns():
+    if not transactions:
+        raise HTTPException(
+            status_code=503,
+            detail="Darījumu dati nav ielādēti"
+        )
 
+    return {
+        "column_count": len(transactions[0].keys()),
+        "columns": list(transactions[0].keys())
+    }
 @app.get("/valuation")
 def valuation(
     q: str = Query(min_length=3),
