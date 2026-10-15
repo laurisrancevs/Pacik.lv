@@ -330,7 +330,7 @@ def transaction_sample():
     return {
         "sample": transactions[:5]
     }
- @app.get("/building-sample")
+@app.get("/building-sample")
 def building_sample():
     if not transactions:
         raise HTTPException(
