@@ -178,15 +178,12 @@ def search_address(
         )
 
     query = q.casefold().strip()
-
     results = []
 
     for row in addresses:
-
         address = row.get("STD", "") or ""
 
         if query in address.casefold():
-
             results.append({
                 "address": address,
                 "object_code": row.get("KODS", "")
@@ -205,9 +202,7 @@ def search_address(
 # ADDRESS SAMPLE
 # --------------------------------------------------
 
-
-
-    @app.get("/sample")
+@app.get("/sample")
 def sample():
     if not addresses:
         raise HTTPException(
@@ -252,11 +247,9 @@ def search_transactions(
         )
 
     query = q.casefold().strip()
-
     results = []
 
     for row in transactions:
-
         address = (
             row.get(
                 "Adreses standartpieraksts_DTG",
@@ -266,7 +259,6 @@ def search_transactions(
         )
 
         if query in address.casefold():
-
             results.append({
                 "address": address,
                 "date": row.get(
@@ -307,54 +299,107 @@ def search_transactions(
         "count": len(results),
         "results": results
     }
+
+
+# --------------------------------------------------
+# VALUATION
+# --------------------------------------------------
+
 @app.get("/valuation")
 def valuation(
     q: str = Query(min_length=3),
     area: float = Query(gt=0),
     city: str = Query(min_length=2)
 ):
+    if not transactions:
+        raise HTTPException(
+            status_code=503,
+            detail="Darījumu dati nav ielādēti"
+        )
+
     query = q.casefold().strip()
+    city_query = city.casefold().strip()
+
     comparable = []
 
     for row in transactions:
-        address = row.get("Adreses standartpieraksts_DTG", "")
+        address = (
+            row.get(
+                "Adreses standartpieraksts_DTG",
+                ""
+            )
+            or ""
+        )
 
-        if query not in address.casefold():
-            continue
-                
+        address_normalized = address.casefold()
 
-        if city.casefold() not in address.casefold():
+        if query not in address_normalized:
             continue
-    
+
+        if city_query not in address_normalized:
+            continue
 
         try:
-            price = float(
+            price_raw = (
                 row.get("Darījuma summa_DTG", "")
+                or ""
+            )
+
+            area_raw = (
+                row.get("Dzīvokļa platība_DTG", "")
+                or ""
+            )
+
+            price = float(
+                price_raw
                 .replace(" ", "")
                 .replace(",", ".")
             )
 
             apartment_area = float(
-                row.get("Dzīvokļa platība_DTG", "")
+                area_raw
                 .replace(" ", "")
                 .replace(",", ".")
             )
-            if apartment_area < area * 0.8 or apartment_area > area * 1.2:
-                continue
-            if price <= 0 or apartment_area <= 0:
-                continue
-
-            price_per_m2 = price / apartment_area
-
-            comparable.append({
-                "address": address,
-                "price": price,
-                "area": apartment_area,
-                "price_per_m2": round(price_per_m2, 2)
-            })
 
         except (ValueError, TypeError):
             continue
+
+        if price <= 0 or apartment_area <= 0:
+            continue
+
+        # Izmantojam tikai dzīvokļus, kuru platība ir
+        # +/- 20% no vērtējamā dzīvokļa platības.
+        if (
+            apartment_area < area * 0.8
+            or apartment_area > area * 1.2
+        ):
+            continue
+
+        price_per_m2 = price / apartment_area
+
+        comparable.append({
+            "address": address,
+            "price": price,
+            "area": apartment_area,
+            "price_per_m2": round(price_per_m2, 2),
+            "date": row.get(
+                "Darījuma datums_DTG",
+                ""
+            ),
+            "rooms": row.get(
+                "Dzīvojamo telpu skaits_DTG",
+                ""
+            ),
+            "floor": row.get(
+                "Zemākais stāvs_DTG",
+                ""
+            ),
+            "building_year": row.get(
+                "Ekspluatācijas uzsākšanas gads(saraksts)_DTG_Z_E",
+                ""
+            )
+        })
 
     if not comparable:
         raise HTTPException(
@@ -363,16 +408,23 @@ def valuation(
         )
 
     average_price_per_m2 = sum(
-        item["price_per_m2"] for item in comparable
+        item["price_per_m2"]
+        for item in comparable
     ) / len(comparable)
 
     estimated_value = average_price_per_m2 * area
 
     return {
         "query": q,
+        "city": city,
         "area": area,
         "comparable_count": len(comparable),
-        "average_price_per_m2": round(average_price_per_m2, 2),
-        "estimated_value": round(estimated_value),
+        "average_price_per_m2": round(
+            average_price_per_m2,
+            2
+        ),
+        "estimated_value": round(
+            estimated_value
+        ),
         "comparables": comparable[:10]
     }
