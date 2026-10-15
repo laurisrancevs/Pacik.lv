@@ -487,30 +487,30 @@ def valuation(
                     ""
                 )
             })
-        if not comparable:
-            raise HTTPException(
-                status_code=404,
-                detail="Nav atrasti piemēroti salīdzināmie darījumi"
-            )
-    
-        average_price_per_m2 = sum(
-            item["price_per_m2"]
-            for item in comparable
-        ) / len(comparable)
-    
-        estimated_value = average_price_per_m2 * area
-    
-        return {
-            "query": q,
-            "city": city,
-            "area": area,
-            "comparable_count": len(comparable),
-            "average_price_per_m2": round(
-                average_price_per_m2,
-                2
-            ),
-            "estimated_value": round(
-                estimated_value
-            ),
-            "comparables": comparable[:10]
-        }
+    if not comparable:
+        raise HTTPException(
+            status_code=404,
+            detail="Nav atrasti piemēroti salīdzināmie darījumi"
+        )
+
+    average_price_per_m2 = sum(
+        item["price_per_m2"]
+        for item in comparable
+    ) / len(comparable)
+
+    estimated_value = average_price_per_m2 * area
+
+    return {
+        "query": q,
+        "city": city,
+        "area": area,
+        "comparable_count": len(comparable),
+        "average_price_per_m2": round(
+            average_price_per_m2,
+            2
+        ),
+        "estimated_value": round(
+            estimated_value
+        ),
+        "comparables": comparable[:10]
+    }
