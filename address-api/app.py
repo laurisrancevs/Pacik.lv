@@ -341,7 +341,8 @@ def valuation(
                 .replace(" ", "")
                 .replace(",", ".")
             )
-
+            if apartment_area < area * 0.8 or apartment_area > area * 1.2:
+                continue
             if price <= 0 or apartment_area <= 0:
                 continue
 
