@@ -678,8 +678,8 @@ def valuation(
 
             if item is None:
                 continue
-                # Ja zinām vērtējamās ēkas gadu,
-            # priekšroku dodam līdzīga vecuma ēkām
+                            # Ja zinām vērtējamās ēkas parametrus,
+            # atlasām līdzīga vecuma un materiāla ēkas
             if target_building:
                 target_year = parse_number(
                     target_building.get("exploit_year")
@@ -690,6 +690,18 @@ def valuation(
 
                 if target_year and comparable_year:
                     if abs(target_year - comparable_year) > 20:
+                        continue
+
+                target_material = (
+                    target_building.get("material", "") or ""
+                ).casefold().strip()
+
+                comparable_material = (
+                    item.get("building_material", "") or ""
+                ).casefold().strip()
+
+                if target_material and comparable_material:
+                    if target_material != comparable_material:
                         continue
 
             if is_duplicate(
