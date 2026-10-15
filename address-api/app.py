@@ -10,7 +10,7 @@ from google.cloud import storage
 from fastapi.middleware.cors import CORSMiddleware
 BUCKET = "pacik-lv-address-data"
 FILE = "aw_eka.csv"
-
+TRANSACTIONS_FILE = "transactions/TG.csv"
 addresses = []
 logger = logging.getLogger(__name__)
 
