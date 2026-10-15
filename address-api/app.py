@@ -803,3 +803,60 @@ def building_by_code(
         )
 
     return building
+@app.get("/building-by-address")
+def building_by_address(
+    q: str = Query(min_length=3)
+):
+    query = q.casefold().strip()
+
+    # Atrodam adresi adrešu reģistrā
+    address_match = None
+
+    for row in addresses:
+        address = (row.get("STD", "") or "").strip()
+
+        if address.casefold() == query:
+            address_match = row
+            break
+
+    # Ja lietotājs nav norādījis pasta indeksu,
+    # mēģinām atrast adresi pēc sākuma
+    if address_match is None:
+        for row in addresses:
+            address = (row.get("STD", "") or "").strip()
+            address_normalized = address.casefold()
+
+            if address_normalized.startswith(query):
+                remaining = address_normalized[len(query):]
+
+                if not remaining or remaining.startswith(","):
+                    address_match = row
+                    break
+
+    if address_match is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Adrese nav atrasta"
+        )
+
+    varis_code = (address_match.get("KODS", "") or "").strip()
+
+    if not varis_code:
+        raise HTTPException(
+            status_code=404,
+            detail="Adresei nav KODS"
+        )
+
+    building = get_building_by_varis_code(varis_code)
+
+    if building is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Ēka nav atrasta VZD būvju datos"
+        )
+
+    return {
+        "address": address_match.get("STD", ""),
+        "varis_code": varis_code,
+        "building": building
+    }
