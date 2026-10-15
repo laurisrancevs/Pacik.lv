@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
         )
         transactions_raw = transactions_blob.download_as_bytes()
 
-        transactions_decoded = transactions_raw.decode("utf-8-sig")
+        transactions_decoded = transactions_raw.decode("utf-16")
         transactions_reader = csv.DictReader(
             io.StringIO(transactions_decoded),
             delimiter=";"
