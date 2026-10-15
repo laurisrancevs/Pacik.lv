@@ -391,7 +391,35 @@ try {
   alert("Neizdevās saglabāt pieteikumu. Lūdzu, mēģini vēlreiz.");
   return;
 }
+try {
+    const city = "Rīga";
 
+    const addressForValuation = address
+        .replace(", Rīga, LV-", ",")
+        .split(",")[0]
+        .trim();
+
+    const valuationUrl =
+        "https://pacik-address-api-581028202745.europe-west1.run.app/valuation" +
+        "?q=" + encodeURIComponent(addressForValuation) +
+        "&area=" + encodeURIComponent(area) +
+        "&city=" + encodeURIComponent(city);
+
+    const valuationResponse = await fetch(valuationUrl);
+
+    if (!valuationResponse.ok) {
+        throw new Error("Vērtējumu neizdevās aprēķināt");
+    }
+
+    const valuation = await valuationResponse.json();
+
+    console.log("PACIK vērtējums:", valuation);
+
+    window.pacikValuation = valuation;
+
+} catch (error) {
+    console.error("Vērtēšanas kļūda:", error);
+}
       document.getElementById("step2").style.display =
         "none";
 
