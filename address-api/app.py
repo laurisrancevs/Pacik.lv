@@ -1,6 +1,7 @@
 import csv
 import io
 import logging
+import sqlite3
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Query, HTTPException
@@ -14,6 +15,8 @@ from google.cloud import storage
 
 BUCKET = "pacik-lv-address-data"
 FILE = "aw_eka.csv"
+BUILDINGS_DB_FILE = "buildings.db"
+BUILDINGS_DB_PATH = "/tmp/buildings.db"
 TRANSACTIONS_FILE = "transactions/TG.csv"
 
 addresses = []
@@ -32,7 +35,12 @@ async def lifespan(app: FastAPI):
 
     try:
         client = storage.Client()
+bucket = client.bucket(BUCKET)
 
+buildings_blob = bucket.blob(BUILDINGS_DB_FILE)
+buildings_blob.download_to_filename(BUILDINGS_DB_PATH)
+
+logger.info("Buildings DB lejupielādēta")
         # ADDRESS DATA
         address_blob = client.bucket(BUCKET).blob(FILE)
         address_raw = address_blob.download_as_bytes()
@@ -126,6 +134,23 @@ app.add_middleware(
 # --------------------------------------------------
 # HOME
 # --------------------------------------------------
+def get_building_by_varis_code(varis_code: str):
+    con = sqlite3.connect(BUILDINGS_DB_PATH)
+    con.row_factory = sqlite3.Row
+
+    try:
+        row = con.execute(
+            "SELECT * FROM buildings WHERE varis_code = ?",
+            (varis_code,)
+        ).fetchone()
+
+        if row is None:
+            return None
+
+        return dict(row)
+    finally:
+        con.close()
+
 
 @app.get("/")
 def home():
@@ -763,3 +788,16 @@ def valuation(
         ),
         "comparables": comparable[:10]
     }
+@app.get("/building-by-code")
+def building_by_code(
+    varis_code: str = Query(min_length=1)
+):
+    building = get_building_by_varis_code(varis_code)
+
+    if building is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Ēka nav atrasta"
+        )
+
+    return building
