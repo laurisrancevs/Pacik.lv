@@ -1,20 +1,30 @@
-
-
 import csv
 import io
 import logging
-import os
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Query, HTTPException
-from google.cloud import storage
 from fastapi.middleware.cors import CORSMiddleware
+from google.cloud import storage
+
+
+# --------------------------------------------------
+# CONFIG
+# --------------------------------------------------
+
 BUCKET = "pacik-lv-address-data"
 FILE = "aw_eka.csv"
 TRANSACTIONS_FILE = "transactions/TG.csv"
+
 addresses = []
 transactions = []
+
 logger = logging.getLogger(__name__)
 
+
+# --------------------------------------------------
+# LOAD DATA
+# --------------------------------------------------
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -23,38 +33,60 @@ async def lifespan(app: FastAPI):
     try:
         client = storage.Client()
 
-        blob = client.bucket(BUCKET).blob(FILE)
-        raw = blob.download_as_bytes()
+        # -------------------------
+        # ADDRESS DATA
+        # -------------------------
 
-        decoded = raw.decode("utf-8-sig")
-        reader = csv.DictReader(
-            io.StringIO(decoded),
+        address_blob = client.bucket(BUCKET).blob(FILE)
+        address_raw = address_blob.download_as_bytes()
+
+        address_decoded = address_raw.decode("utf-8-sig")
+
+        address_reader = csv.DictReader(
+            io.StringIO(address_decoded),
             delimiter=";"
         )
 
-        if not reader.fieldnames:
-            raise ValueError("CSV failā nav atrastas kolonnas")
-    
-        logger.info("CSV kolonnas: %s", reader.fieldnames)
+        if not address_reader.fieldnames:
+            raise ValueError(
+                "Adrešu CSV failā nav atrastas kolonnas"
+            )
 
-        addresses = list(reader)
+        addresses = list(address_reader)
+
         logger.info(
             "Ielādēti %s adrešu ieraksti",
             len(addresses)
         )
 
+        # -------------------------
+        # TRANSACTION DATA
+        # -------------------------
+
         transactions_blob = client.bucket(BUCKET).blob(
             TRANSACTIONS_FILE
         )
+
         transactions_raw = transactions_blob.download_as_bytes()
 
         transactions_decoded = transactions_raw.decode("utf-16")
+
         transactions_reader = csv.DictReader(
             io.StringIO(transactions_decoded),
-            delimiter=","
+            delimiter=";"
         )
 
-        transactions = [row for row in transactions_reader if row]
+        if not transactions_reader.fieldnames:
+            raise ValueError(
+                "Darījumu CSV failā nav atrastas kolonnas"
+            )
+
+        transactions = [
+            row
+            for row in transactions_reader
+            if row
+        ]
+
         logger.info(
             "Ielādēti %s darījumu ieraksti",
             len(transactions)
@@ -62,19 +94,28 @@ async def lifespan(app: FastAPI):
 
     except Exception:
         logger.exception(
-            "Neizdevās ielādēt adrešu un darījumu datus"
+            "Neizdevās ielādēt adrešu vai darījumu datus"
         )
+
         addresses = []
         transactions = []
 
     yield
 
 
+# --------------------------------------------------
+# FASTAPI
+# --------------------------------------------------
+
 app = FastAPI(
     title="PACIK.LV Address API",
     lifespan=lifespan
 )
 
+
+# --------------------------------------------------
+# CORS
+# --------------------------------------------------
 
 app.add_middleware(
     CORSMiddleware,
@@ -85,29 +126,51 @@ app.add_middleware(
 )
 
 
+# --------------------------------------------------
+# HOME
+# --------------------------------------------------
 
 @app.get("/")
 def home():
     return {
         "status": "ok",
         "service": "PACIK.LV Address API",
-        "loaded_records": len(addresses)
+        "loaded_records": len(addresses),
+        "transaction_records": len(transactions)
     }
 
+
+# --------------------------------------------------
+# HEALTH
+# --------------------------------------------------
 
 @app.get("/health")
 def health():
     return {
         "status": "ok",
         "loaded_records": len(addresses),
-        "columns": list(addresses[0].keys()) if addresses else [],
+        "columns": (
+            list(addresses[0].keys())
+            if addresses
+            else []
+        ),
         "transaction_records": len(transactions),
-"transaction_columns": list(transactions[0].keys()) if transactions else []
+        "transaction_columns": (
+            list(transactions[0].keys())
+            if transactions
+            else []
+        )
     }
 
 
+# --------------------------------------------------
+# ADDRESS SEARCH
+# --------------------------------------------------
+
 @app.get("/search")
-def search_address(q: str = Query(min_length=3)):
+def search_address(
+    q: str = Query(min_length=3)
+):
     if not addresses:
         raise HTTPException(
             status_code=503,
@@ -115,12 +178,15 @@ def search_address(q: str = Query(min_length=3)):
         )
 
     query = q.casefold().strip()
+
     results = []
 
     for row in addresses:
-        address = row.get("STD", "")
+
+        address = row.get("STD", "") or ""
 
         if query in address.casefold():
+
             results.append({
                 "address": address,
                 "object_code": row.get("KODS", "")
@@ -129,13 +195,31 @@ def search_address(q: str = Query(min_length=3)):
             if len(results) >= 10:
                 break
 
-    return {"query": q, "results": results}
+    return {
+        "query": q,
+        "results": results
+    }
+
+
+# --------------------------------------------------
+# ADDRESS SAMPLE
+# --------------------------------------------------
+
 @app.get("/sample")
 def sample():
     if not addresses:
-        raise HTTPException(status_code=503, detail="Adrešu dati nav ielādēti")
+        raise HTTPException(
+            status_code=503,
+            detail="Adrešu dati nav ielādēti"
+        )
 
     return addresses[0]
+
+
+# --------------------------------------------------
+# TRANSACTION SAMPLE
+# --------------------------------------------------
+
 @app.get("/transaction-sample")
 def transaction_sample():
     if not transactions:
@@ -144,14 +228,25 @@ def transaction_sample():
             detail="Darījumu dati nav ielādēti"
         )
 
-      return {
-    "count": len(transactions),
-    "first": transactions[0],
-    "second": transactions[1] if len(transactions) > 1 else None
-}
+    return {
+        "count": len(transactions),
+        "first": transactions[0],
+        "second": (
+            transactions[1]
+            if len(transactions) > 1
+            else None
+        )
+    }
+
+
+# --------------------------------------------------
+# TRANSACTION SEARCH
+# --------------------------------------------------
 
 @app.get("/transactions/search")
-def search_transactions(q: str = Query(min_length=3)):
+def search_transactions(
+    q: str = Query(min_length=3)
+):
     if not transactions:
         raise HTTPException(
             status_code=503,
@@ -159,22 +254,49 @@ def search_transactions(q: str = Query(min_length=3)):
         )
 
     query = q.casefold().strip()
+
     results = []
 
     for row in transactions:
-        address = row.get("Adreses standartpieraksts_DTG", "")
+
+        address = (
+            row.get(
+                "Adreses standartpieraksts_DTG",
+                ""
+            )
+            or ""
+        )
 
         if query in address.casefold():
+
             results.append({
                 "address": address,
-                "date": row.get("Darījuma datums_DTG", ""),
-                "price": row.get("Darījuma summa_DTG", ""),
-                "apartment_area": row.get("Dzīvokļa platība_DTG", ""),
-                "total_area": row.get("Telpu grupas kopplatība_DTG", ""),
-                "rooms": row.get("Dzīvojamo telpu skaits_DTG", ""),
-                "floor": row.get("Zemākais stāvs_DTG", ""),
+                "date": row.get(
+                    "Darījuma datums_DTG",
+                    ""
+                ),
+                "price": row.get(
+                    "Darījuma summa_DTG",
+                    ""
+                ),
+                "apartment_area": row.get(
+                    "Dzīvokļa platība_DTG",
+                    ""
+                ),
+                "total_area": row.get(
+                    "Telpu grupas kopplatība_DTG",
+                    ""
+                ),
+                "rooms": row.get(
+                    "Dzīvojamo telpu skaits_DTG",
+                    ""
+                ),
+                "floor": row.get(
+                    "Zemākais stāvs_DTG",
+                    ""
+                ),
                 "building_year": row.get(
-                    "(B) Ekspluatācijas uzsākšanas gads(saraksts)_DTG_Z_E",
+                    "Ekspluatācijas uzsākšanas gads(saraksts)_DTG_Z_E",
                     ""
                 )
             })
