@@ -7,7 +7,7 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Query, HTTPException
 from google.cloud import storage
-
+from fastapi.middleware.cors import CORSMiddleware
 BUCKET = "pacik-lv-address-data"
 FILE = "aw_eka.csv"
 
