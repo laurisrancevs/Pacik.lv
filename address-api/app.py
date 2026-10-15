@@ -32,28 +32,29 @@ async def lifespan(app: FastAPI):
 
         logger.info("CSV kolonnas: %s", reader.fieldnames)
 
-        addresses = list(reader)
+                addresses = list(reader)
         logger.info("Ielādēti %s adrešu ieraksti", len(addresses))
+
         transactions_blob = client.bucket(BUCKET).blob(TRANSACTIONS_FILE)
         transactions_raw = transactions_blob.download_as_bytes()
 
-transactions_decoded = transactions_raw.decode("utf-8-sig")
-transactions_reader = csv.DictReader(
-    io.StringIO(transactions_decoded),
-    delimiter=";"
-)
+        transactions_decoded = transactions_raw.decode("utf-8-sig")
+        transactions_reader = csv.DictReader(
+            io.StringIO(transactions_decoded),
+            delimiter=";"
+        )
 
-transactions = list(transactions_reader)
+        transactions = list(transactions_reader)
 
-logger.info(
-    "Ielādēti %s darījumu ieraksti",
-    len(transactions)
-)
+        logger.info(
+            "Ielādēti %s darījumu ieraksti",
+            len(transactions)
+        )
+
     except Exception:
-        logger.exception("Neizdevās ielādēt adrešu datus")
+        logger.exception("Neizdevās ielādēt adrešu un darījumu datus")
         addresses = []
         transactions = []
-
     yield
 
 
