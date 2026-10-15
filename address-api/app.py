@@ -51,7 +51,7 @@ async def lifespan(app: FastAPI):
         transactions_decoded = transactions_raw.decode("utf-16")
         transactions_reader = csv.DictReader(
             io.StringIO(transactions_decoded),
-            delimiter=";"
+            delimiter=","
         )
 
         transactions = list(transactions_reader)
