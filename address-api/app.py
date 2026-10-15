@@ -228,9 +228,9 @@ def transaction_sample():
         )
 
     return {
-        "columns": list(transactions[0].keys())
+        "count": len(transactions),
+        "first": transactions[0]
     }
-
 
 # --------------------------------------------------
 # TRANSACTION SEARCH
