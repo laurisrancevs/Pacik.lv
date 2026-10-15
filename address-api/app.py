@@ -205,7 +205,9 @@ def search_address(
 # ADDRESS SAMPLE
 # --------------------------------------------------
 
-@app.get("/sample")
+
+
+    @app.get("/sample")
 def sample():
     if not addresses:
         raise HTTPException(
@@ -213,7 +215,9 @@ def sample():
             detail="Adrešu dati nav ielādēti"
         )
 
-    return addresses[0]
+    return {
+        "columns": list(addresses[0].keys())
+    }
 
 
 # --------------------------------------------------
