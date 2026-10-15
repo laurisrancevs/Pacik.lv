@@ -35,14 +35,16 @@ async def lifespan(app: FastAPI):
 
     try:
         client = storage.Client()
-bucket = client.bucket(BUCKET)
+        bucket = client.bucket(BUCKET)
 
-buildings_blob = bucket.blob(BUILDINGS_DB_FILE)
-buildings_blob.download_to_filename(BUILDINGS_DB_PATH)
+        # BUILDINGS DATABASE
+        buildings_blob = bucket.blob(BUILDINGS_DB_FILE)
+        buildings_blob.download_to_filename(BUILDINGS_DB_PATH)
 
-logger.info("Buildings DB lejupielādēta")
+        logger.info("Buildings DB lejupielādēta")
+
         # ADDRESS DATA
-        address_blob = client.bucket(BUCKET).blob(FILE)
+        address_blob = bucket.blob(FILE)
         address_raw = address_blob.download_as_bytes()
         address_decoded = address_raw.decode("utf-8-sig")
 
@@ -64,7 +66,7 @@ logger.info("Buildings DB lejupielādēta")
         )
 
         # TRANSACTION DATA
-        transactions_blob = client.bucket(BUCKET).blob(
+        transactions_blob = bucket.blob(
             TRANSACTIONS_FILE
         )
 
