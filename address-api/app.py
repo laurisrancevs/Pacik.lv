@@ -317,19 +317,16 @@ def valuation(
             detail="Darījumu dati nav ielādēti"
         )
 
-    query = q.casefold().strip()
     city_query = city.casefold().strip()
-query = q.casefold().strip()
-city_query = city.casefold().strip()
 
-# Ja q ir pilna adrese, atdalām ielu un mājas numuru
-query_parts = q.strip().rsplit(" ", 1)
+    # Ja q ir pilna adrese, atdalām ielu un mājas numuru
+    query_parts = q.strip().rsplit(" ", 1)
 
-street_query = query_parts[0].casefold().strip()
+    street_query = query_parts[0].casefold().strip()
 
-house_number = ""
-if len(query_parts) == 2:
-    house_number = query_parts[1].casefold().strip()
+    house_number = ""
+    if len(query_parts) == 2:
+        house_number = query_parts[1].casefold().strip()
 
     comparable = []
 
@@ -352,7 +349,6 @@ if len(query_parts) == 2:
 
         if city_query not in address_normalized:
             continue
-
 
         try:
             price_raw = (
@@ -384,7 +380,7 @@ if len(query_parts) == 2:
             continue
 
         # Izmantojam tikai dzīvokļus, kuru platība ir
-        # +/- 20% no vērtējamā dzīvokļa platības.
+        # +/- 20% no vērtējamā dzīvokļa platības
         if (
             apartment_area < area * 0.8
             or apartment_area > area * 1.2
