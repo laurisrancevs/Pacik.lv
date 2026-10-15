@@ -860,3 +860,49 @@ def building_by_address(
         "varis_code": varis_code,
         "building": building
     }
+@app.get("/building-by-address")
+def building_by_address(
+    q: str = Query(min_length=3)
+):
+    if not addresses:
+        raise HTTPException(
+            status_code=503,
+            detail="Adrešu dati nav ielādēti"
+        )
+
+    query = q.casefold().strip().rstrip(",")
+
+    # Atrodam precīzu adresi
+    for row in addresses:
+        address = (row.get("STD", "") or "").strip()
+        address_normalized = address.casefold()
+
+        # Noņemam pasta indeksu salīdzināšanai
+        address_without_postcode = address_normalized
+        if ", lv-" in address_without_postcode:
+            address_without_postcode = address_without_postcode.split(", lv-")[0]
+
+        if (
+            address_normalized == query
+            or address_without_postcode == query
+        ):
+            varis_code = (row.get("KODS", "") or "").strip()
+
+            building = get_building_by_varis_code(varis_code)
+
+            if building is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Ēkas dati nav atrasti"
+                )
+
+            return {
+                "address": address,
+                "object_code": varis_code,
+                "building": building
+            }
+
+    raise HTTPException(
+        status_code=404,
+        detail="Adrese nav atrasta"
+    )
