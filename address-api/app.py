@@ -466,7 +466,21 @@ def valuation(
             status_code=503,
             detail="Darījumu dati nav ielādēti"
         )
+    # Atrodam ēku pēc ievadītās adreses
+    target_building = None
+    target_varis_code = ""
 
+    query_address = q.casefold().strip()
+
+    for address_row in addresses:
+        std_address = (address_row.get("STD", "") or "").casefold().strip()
+
+        if std_address.startswith(query_address + ","):
+            target_varis_code = (address_row.get("KODS", "") or "").strip()
+            break
+
+    if target_varis_code:
+        target_building = get_building_by_varis_code(target_varis_code)
     city_query = city.casefold().strip()
 
     query_parts = q.strip().rsplit(" ", 1)
