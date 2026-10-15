@@ -370,7 +370,7 @@ def building_info(
             detail="Darījumu dati nav ielādēti"
         )
 
-    query = q.casefold().strip()
+    query = q.casefold().strip().rstrip(",")
     results = []
 
     for row in transactions:
@@ -382,8 +382,22 @@ def building_info(
             or ""
         )
 
-        if query not in address.casefold():
+        address_normalized = address.casefold().strip()
+
+        # Adresei jāsākas precīzi ar meklēto ielu + mājas numuru.
+        if not address_normalized.startswith(query):
             continue
+
+        # Neļaujam "100" sakrist ar "100A", "100B", "1000" utt.
+        remaining = address_normalized[len(query):]
+
+        if remaining:
+            first_char = remaining[0]
+
+            # Pēc precīza mājas numura sagaidām komatu.
+            # Piemēram: "Brīvības iela 100, Rīga..."
+            if first_char != ",":
+                continue
 
         results.append({
             "address": address,
@@ -406,9 +420,9 @@ def building_info(
 
     return {
         "query": q,
+        "count": len(results),
         "results": results
     }
-
 
 # --------------------------------------------------
 # VALUATION
