@@ -12,12 +12,13 @@ BUCKET = "pacik-lv-address-data"
 FILE = "aw_eka.csv"
 TRANSACTIONS_FILE = "transactions/TG.csv"
 addresses = []
+transactions = []
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global addresses
+    global addresses, transactions
     try:
         client = storage.Client()
         blob = client.bucket(BUCKET).blob(FILE)
@@ -33,9 +34,25 @@ async def lifespan(app: FastAPI):
 
         addresses = list(reader)
         logger.info("Ielādēti %s adrešu ieraksti", len(addresses))
+        transactions_blob = client.bucket(BUCKET).blob(TRANSACTIONS_FILE)
+transactions_raw = transactions_blob.download_as_bytes()
+
+transactions_decoded = transactions_raw.decode("utf-8-sig")
+transactions_reader = csv.DictReader(
+    io.StringIO(transactions_decoded),
+    delimiter=";"
+)
+
+transactions = list(transactions_reader)
+
+logger.info(
+    "Ielādēti %s darījumu ieraksti",
+    len(transactions)
+)
     except Exception:
         logger.exception("Neizdevās ielādēt adrešu datus")
         addresses = []
+        transactions = []
 
     yield
 
@@ -70,7 +87,9 @@ def health():
     return {
         "status": "ok",
         "loaded_records": len(addresses),
-        "columns": list(addresses[0].keys()) if addresses else []
+        "columns": list(addresses[0].keys()) if addresses else [],
+        "transaction_records": len(transactions),
+"transaction_columns": list(transactions[0].keys()) if transactions else []
     }
 
 
