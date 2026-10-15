@@ -144,7 +144,11 @@ def transaction_sample():
             detail="Darījumu dati nav ielādēti"
         )
 
-        return transactions[0]
+      return {
+    "count": len(transactions),
+    "first": transactions[0],
+    "second": transactions[1] if len(transactions) > 1 else None
+}
 
 @app.get("/transactions/search")
 def search_transactions(q: str = Query(min_length=3)):
