@@ -312,7 +312,8 @@ def search_transactions(
 @app.get("/valuation")
 def valuation(
     q: str = Query(min_length=3),
-    area: float = Query(gt=0)
+    area: float = Query(gt=0),
+    city: str = Query(min_length=2)
 ):
     query = q.casefold().strip()
     comparable = []
@@ -322,6 +323,8 @@ def valuation(
 
         if query not in address.casefold():
             continue
+                if city.casefold() not in address.casefold():
+        continue
 
         try:
             price = float(
