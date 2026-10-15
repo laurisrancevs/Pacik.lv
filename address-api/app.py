@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
             delimiter=","
         )
 
-       transactions = [row for row in transactions_reader if row is not None and any(row.values())]
+        transactions = [row for row in transactions_reader if row is not None and any(row.values())]
         logger.info(
             "Ielādēti %s darījumu ieraksti",
             len(transactions)
