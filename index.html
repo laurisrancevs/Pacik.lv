@@ -241,16 +241,15 @@
 
         <h1>PACIK.LV</h1>
 
-        <h2>Paldies!</h2>
+        <h2>Tava īpašuma aptuvenā tirgus vērtība</h2>
 
-        <p>
-          Informācija par īpašumu ir saņemta.
-        </p>
+<h1 id="valuationResult">
+    Aprēķinām...
+</h1>
 
-        <p>
-          Nākamais solis būs aprēķināt īpašuma
-          aptuveno tirgus vērtību.
-        </p>
+<p id="valuationInfo">
+    Vērtējums balstīts uz salīdzināmiem nekustamā īpašuma darījumiem.
+</p>
 
       </div>
 
@@ -416,7 +415,16 @@ try {
     console.log("PACIK vērtējums:", valuation);
 
     window.pacikValuation = valuation;
+document.getElementById("valuationResult").textContent =
+    valuation.estimated_min.toLocaleString("lv-LV") +
+    " € – " +
+    valuation.estimated_max.toLocaleString("lv-LV") +
+    " €";
 
+document.getElementById("valuationInfo").textContent =
+    "Aprēķins balstīts uz " +
+    valuation.comparable_count +
+    " salīdzināmiem nekustamā īpašuma darījumiem.";
 } catch (error) {
     console.error("Vērtēšanas kļūda:", error);
 }
