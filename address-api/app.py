@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
         raw = blob.download_as_bytes()
 
         decoded = raw.decode("utf-8-sig")
-        reader = csv.DictReader(io.StringIO(decoded), delimiter=";")
+        reader = csv.DictReader(io.StringIO(decoded), delimiter=",")
 
         if not reader.fieldnames:
             raise ValueError("CSV failā nav atrastas kolonnas")
