@@ -674,19 +674,20 @@ def valuation(
 
             if item is None:
                 continue
-# Ja zinām vērtējamās ēkas gadu,
-# priekšroku dodam līdzīga vecuma ēkām
-if target_building:
-    target_year = parse_number(
-        target_building.get("exploit_year")
-    )
-    comparable_year = parse_number(
-        item.get("building_year")
-    )
+                # Ja zinām vērtējamās ēkas gadu,
+            # priekšroku dodam līdzīga vecuma ēkām
+            if target_building:
+                target_year = parse_number(
+                    target_building.get("exploit_year")
+                )
+                comparable_year = parse_number(
+                    item.get("building_year")
+                )
 
-    if target_year and comparable_year:
-        if abs(target_year - comparable_year) > 20:
-            continue
+                if target_year and comparable_year:
+                    if abs(target_year - comparable_year) > 20:
+                        continue
+
             if is_duplicate(
                 item,
                 building_comparables
