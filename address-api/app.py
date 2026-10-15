@@ -319,6 +319,17 @@ def valuation(
 
     query = q.casefold().strip()
     city_query = city.casefold().strip()
+query = q.casefold().strip()
+city_query = city.casefold().strip()
+
+# Ja q ir pilna adrese, atdalām ielu un mājas numuru
+query_parts = q.strip().rsplit(" ", 1)
+
+street_query = query_parts[0].casefold().strip()
+
+house_number = ""
+if len(query_parts) == 2:
+    house_number = query_parts[1].casefold().strip()
 
     comparable = []
 
@@ -333,11 +344,15 @@ def valuation(
 
         address_normalized = address.casefold()
 
-        if query not in address_normalized:
+        if street_query not in address_normalized:
+            continue
+
+        if house_number and house_number not in address_normalized:
             continue
 
         if city_query not in address_normalized:
             continue
+
 
         try:
             price_raw = (
