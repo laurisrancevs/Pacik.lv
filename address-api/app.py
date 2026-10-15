@@ -57,7 +57,11 @@ def home():
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "loaded_records": len(addresses)}
+    return {
+        "status": "ok",
+        "loaded_records": len(addresses),
+        "columns": list(addresses[0].keys()) if addresses else []
+    }
 
 
 @app.get("/search")
