@@ -323,8 +323,11 @@ def valuation(
 
         if query not in address.casefold():
             continue
-                if city.casefold() not in address.casefold():
-        continue
+                
+
+        if city.casefold() not in address.casefold():
+            continue
+    
 
         try:
             price = float(
