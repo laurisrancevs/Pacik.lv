@@ -319,7 +319,10 @@ def valuation(
 
     city_query = city.casefold().strip()
 
-    # Ja q ir pilna adrese, atdalām ielu un mājas numuru
+    # Atdalām ielu un mājas numuru.
+    # Piemērs: "Brīvības iela 100"
+    # street_query = "brīvības iela"
+    # house_number = "100"
     query_parts = q.strip().rsplit(" ", 1)
 
     street_query = query_parts[0].casefold().strip()
@@ -328,68 +331,65 @@ def valuation(
     if len(query_parts) == 2:
         house_number = query_parts[1].casefold().strip()
 
-    comparable = []
+    # -----------------------------------------------------
+    # PALĪGFUNKCIJAS
+    # -----------------------------------------------------
 
-    for row in transactions:
-        address = (
-            row.get(
-                "Adreses standartpieraksts_DTG",
-                ""
-            )
-            or ""
-        )
-
-        address_normalized = address.casefold()
-
-        if street_query not in address_normalized:
-            continue
-
-        if house_number and house_number not in address_normalized:
-            continue
-
-        if city_query not in address_normalized:
-            continue
+    def parse_number(value):
+        if value is None:
+            return None
 
         try:
-            price_raw = (
-                row.get("Darījuma summa_DTG", "")
-                or ""
-            )
+            value = str(value).strip()
 
-            area_raw = (
-                row.get("Dzīvokļa platība_DTG", "")
-                or ""
-            )
+            if not value:
+                return None
 
-            price = float(
-                price_raw
-                .replace(" ", "")
-                .replace(",", ".")
-            )
-
-            apartment_area = float(
-                area_raw
+            return float(
+                value
                 .replace(" ", "")
                 .replace(",", ".")
             )
 
         except (ValueError, TypeError):
-            continue
+            return None
+
+
+    def make_comparable(row):
+        address = (
+            row.get("Adreses standartpieraksts_DTG", "")
+            or ""
+        )
+
+        price = parse_number(
+            row.get("Darījuma summa_DTG", "")
+        )
+
+        apartment_area = parse_number(
+            row.get("Dzīvokļa platība_DTG", "")
+        )
+
+        if price is None or apartment_area is None:
+            return None
 
         if price <= 0 or apartment_area <= 0:
-            continue
+            return None
 
-        # Izmantojam tikai dzīvokļus, kuru platība ir
+        # Salīdzinām tikai līdzīga izmēra dzīvokļus:
         # +/- 20% no vērtējamā dzīvokļa platības
         if (
             apartment_area < area * 0.8
             or apartment_area > area * 1.2
         ):
-            continue
+            return None
 
         price_per_m2 = price / apartment_area
 
-        comparable.append({
+        # Aizsardzība pret acīmredzami nereālām vērtībām
+        if price_per_m2 < 300 or price_per_m2 > 10000:
+            return None
+
+        return {
             "address": address,
             "price": price,
             "area": apartment_area,
@@ -410,17 +410,100 @@ def valuation(
                 "Ekspluatācijas uzsākšanas gads(saraksts)_DTG_Z_E",
                 ""
             )
-        })
-    # Ja konkrētajā mājā ir mazāk par 3 salīdzināmiem darījumiem,
-    # meklējam papildu darījumus tajā pašā ielā un pilsētā.
-    if len(comparable) < 3 and house_number:
+        }
+
+
+    def is_duplicate(item, items):
+        return any(
+            existing["address"] == item["address"]
+            and existing["price"] == item["price"]
+            and existing["area"] == item["area"]
+            and existing["date"] == item["date"]
+            for existing in items
+        )
+
+
+    # -----------------------------------------------------
+    # 1. MEKLĒJAM KONKRĒTAJĀ MĀJĀ
+    # -----------------------------------------------------
+
+    building_comparables = []
+
+    if house_number:
+
+        target_address_start = (
+            f"{street_query} {house_number}"
+        )
+
         for row in transactions:
+
             address = (
-                row.get("Adreses standartpieraksts_DTG", "")
+                row.get(
+                    "Adreses standartpieraksts_DTG",
+                    ""
+                )
                 or ""
             )
 
-            address_normalized = address.casefold()
+            address_normalized = (
+                address.casefold().strip()
+            )
+
+            if city_query not in address_normalized:
+                continue
+
+            # Adresei jāsākas ar konkrēto ielu + mājas numuru.
+            # Tas samazina risku, ka "100" sakrīt ar "1000".
+            if not address_normalized.startswith(
+                target_address_start
+            ):
+                continue
+
+            # Pēc mājas numura drīkst būt komats vai atstarpe,
+            # bet ne nākamais cipars.
+            remaining = address_normalized[
+                len(target_address_start):
+            ]
+
+            if remaining:
+                first_char = remaining[0]
+
+                if first_char.isdigit():
+                    continue
+
+            item = make_comparable(row)
+
+            if item is None:
+                continue
+
+            if not is_duplicate(
+                item,
+                building_comparables
+            ):
+                building_comparables.append(item)
+
+
+    # -----------------------------------------------------
+    # 2. JA MĀJĀ PAR MAZ DATU — MEKLĒJAM TAJĀ PAŠĀ IELĀ
+    # -----------------------------------------------------
+
+    street_comparables = []
+
+    if len(building_comparables) < 5:
+
+        for row in transactions:
+
+            address = (
+                row.get(
+                    "Adreses standartpieraksts_DTG",
+                    ""
+                )
+                or ""
+            )
+
+            address_normalized = (
+                address.casefold().strip()
+            )
 
             if street_query not in address_normalized:
                 continue
@@ -428,89 +511,164 @@ def valuation(
             if city_query not in address_normalized:
                 continue
 
-            try:
-                price_raw = (
-                    row.get("Darījuma summa_DTG", "")
-                    or ""
-                )
+            item = make_comparable(row)
 
-                area_raw = (
-                    row.get("Dzīvokļa platība_DTG", "")
-                    or ""
-                )
-
-                price = float(
-                    price_raw
-                    .replace(" ", "")
-                    .replace(",", ".")
-                )
-
-                apartment_area = float(
-                    area_raw
-                    .replace(" ", "")
-                    .replace(",", ".")
-                )
-
-            except (ValueError, TypeError):
+            if item is None:
                 continue
 
-            if price <= 0 or apartment_area <= 0:
-                continue
-
-            if (
-                apartment_area < area * 0.8
-                or apartment_area > area * 1.2
+            # Neatkārtojam darījumus, kas jau atrasti
+            # konkrētajā mājā
+            if is_duplicate(
+                item,
+                building_comparables
             ):
                 continue
 
-            # Neieliekam vienu un to pašu darījumu atkārtoti
-            if any(
-                item["address"] == address
-                and item["price"] == price
-                and item["area"] == apartment_area
-                for item in comparable
+            if is_duplicate(
+                item,
+                street_comparables
             ):
                 continue
 
-            price_per_m2 = price / apartment_area
+            street_comparables.append(item)
 
-            comparable.append({
-                "address": address,
-                "price": price,
-                "area": apartment_area,
-                "price_per_m2": round(price_per_m2, 2),
-                "date": row.get("Darījuma datums_DTG", ""),
-                "rooms": row.get("Dzīvojamo telpu skaits_DTG", ""),
-                "floor": row.get("Zemākais stāvs_DTG", ""),
-                "building_year": row.get(
-                    "Ekspluatācijas uzsākšanas gads(saraksts)_DTG_Z_E",
-                    ""
-                )
-            })
+
+    # -----------------------------------------------------
+    # APVIENOJAM SALĪDZINĀMOS
+    # -----------------------------------------------------
+
+    comparable = (
+        building_comparables
+        + street_comparables
+    )
+
     if not comparable:
         raise HTTPException(
             status_code=404,
             detail="Nav atrasti piemēroti salīdzināmie darījumi"
         )
 
+
+    # -----------------------------------------------------
+    # IZMETAM CENU EKSTRĒMUS
+    # -----------------------------------------------------
+
+    prices_per_m2 = sorted(
+        item["price_per_m2"]
+        for item in comparable
+    )
+
+    median_index = len(prices_per_m2) // 2
+
+    if len(prices_per_m2) % 2 == 0:
+        median_price_per_m2 = (
+            prices_per_m2[median_index - 1]
+            + prices_per_m2[median_index]
+        ) / 2
+    else:
+        median_price_per_m2 = (
+            prices_per_m2[median_index]
+        )
+
+    # Atstājam darījumus +/- 35% robežās
+    # no mediānas
+    filtered_comparable = []
+
+    for item in comparable:
+
+        if (
+            item["price_per_m2"]
+            >= median_price_per_m2 * 0.65
+            and item["price_per_m2"]
+            <= median_price_per_m2 * 1.35
+        ):
+            filtered_comparable.append(item)
+
+    # Ja filtrēšana atstāj pārāk maz datu,
+    # izmantojam sākotnējo sarakstu
+    if len(filtered_comparable) >= 3:
+        comparable = filtered_comparable
+
+
+    # -----------------------------------------------------
+    # IEROBEŽOJAM SALĪDZINĀMO SKAITU
+    # -----------------------------------------------------
+
+    # Konkrētās mājas darījumiem dodam priekšroku.
+    comparable = comparable[:20]
+
+
+    # -----------------------------------------------------
+    # APRĒĶINS
+    # -----------------------------------------------------
+
     average_price_per_m2 = sum(
         item["price_per_m2"]
         for item in comparable
     ) / len(comparable)
 
-    estimated_value = average_price_per_m2 * area
+    estimated_value = (
+        average_price_per_m2 * area
+    )
+
+    # Aptuvenais vērtējuma diapazons
+    estimated_min = estimated_value * 0.95
+    estimated_max = estimated_value * 1.05
+
+
+    # -----------------------------------------------------
+    # STATISTIKA
+    # -----------------------------------------------------
+
+    building_count = sum(
+        1
+        for item in comparable
+        if item in building_comparables
+    )
+
+    street_count = (
+        len(comparable) - building_count
+    )
+
+
+    # -----------------------------------------------------
+    # ATBILDE
+    # -----------------------------------------------------
 
     return {
         "query": q,
         "city": city,
         "area": area,
+
         "comparable_count": len(comparable),
+
+        "building_comparable_count":
+            building_count,
+
+        "street_comparable_count":
+            street_count,
+
+        "median_price_per_m2": round(
+            median_price_per_m2,
+            2
+        ),
+
         "average_price_per_m2": round(
             average_price_per_m2,
             2
         ),
+
         "estimated_value": round(
             estimated_value
         ),
+
+        "estimated_min": round(
+            estimated_min
+        ),
+
+        "estimated_max": round(
+            estimated_max
+        ),
+
         "comparables": comparable[:10]
     }
