@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
         addresses = list(reader)
         logger.info("Ielādēti %s adrešu ieraksti", len(addresses))
         transactions_blob = client.bucket(BUCKET).blob(TRANSACTIONS_FILE)
-transactions_raw = transactions_blob.download_as_bytes()
+        transactions_raw = transactions_blob.download_as_bytes()
 
 transactions_decoded = transactions_raw.decode("utf-8-sig")
 transactions_reader = csv.DictReader(
