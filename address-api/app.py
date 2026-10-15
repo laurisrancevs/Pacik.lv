@@ -228,9 +228,9 @@ def transaction_sample():
             detail="Darījumu dati nav ielādēti"
         )
 
-       return {
+    return {
         "columns": list(transactions[0].keys())
-    } 
+    }
 
 
 # --------------------------------------------------
