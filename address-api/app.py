@@ -73,7 +73,7 @@ async def lifespan(app: FastAPI):
 
         transactions_reader = csv.DictReader(
             io.StringIO(transactions_decoded),
-            delimiter=";"
+            delimiter=","
         )
 
         if not transactions_reader.fieldnames:
