@@ -75,9 +75,8 @@ def search_address(q: str = Query(min_length=3)):
     query = q.casefold().strip()
     results = []
 
-    for row in addresses:
-
-            address = row.get("STD", "")
+        for row in addresses:
+        address = row.get("STD", "")
 
         if query in address.casefold():
             results.append({
@@ -85,7 +84,7 @@ def search_address(q: str = Query(min_length=3)):
                 "object_code": row.get("KODS", "")
             })
 
-        if len(results) >= 10:
-            break
+            if len(results) >= 10:
+                break
 
     return {"query": q, "results": results}
