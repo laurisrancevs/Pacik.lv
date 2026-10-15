@@ -137,3 +137,12 @@ def sample():
         raise HTTPException(status_code=503, detail="Adrešu dati nav ielādēti")
 
     return addresses[0]
+@app.get("/transaction-sample")
+def transaction_sample():
+    if not transactions:
+        raise HTTPException(
+            status_code=503,
+            detail="Darījumu dati nav ielādēti"
+        )
+
+    return transactions[0]
