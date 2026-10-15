@@ -50,7 +50,7 @@ async def lifespan(app: FastAPI):
 
         address_reader = csv.DictReader(
             io.StringIO(address_decoded),
-            delimiter=";"
+            delimiter=","
         )
 
         if not address_reader.fieldnames:
