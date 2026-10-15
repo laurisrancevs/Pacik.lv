@@ -146,3 +146,40 @@ def transaction_sample():
         )
 
     return transactions[0]
+    @app.get("/transactions/search")
+def search_transactions(q: str = Query(min_length=3)):
+    if not transactions:
+        raise HTTPException(
+            status_code=503,
+            detail="Darījumu dati nav ielādēti"
+        )
+
+    query = q.casefold().strip()
+    results = []
+
+    for row in transactions:
+        address = row.get("Adreses standartpieraksts_DTG", "")
+
+        if query in address.casefold():
+            results.append({
+                "address": address,
+                "date": row.get("Darījuma datums_DTG", ""),
+                "price": row.get("Darījuma summa_DTG", ""),
+                "apartment_area": row.get("Dzīvokļa platība_DTG", ""),
+                "total_area": row.get("Telpu grupas kopplatība_DTG", ""),
+                "rooms": row.get("Dzīvojamo telpu skaits_DTG", ""),
+                "floor": row.get("Zemākais stāvs_DTG", ""),
+                "building_year": row.get(
+                    "(B) Ekspluatācijas uzsākšanas gads(saraksts)_DTG_Z_E",
+                    ""
+                )
+            })
+
+            if len(results) >= 20:
+                break
+
+    return {
+        "query": q,
+        "count": len(results),
+        "results": results
+    }
