@@ -319,6 +319,17 @@ def transaction_columns():
         "column_count": len(transactions[0].keys()),
         "columns": list(transactions[0].keys())
     }
+@app.get("/transaction-sample")
+def transaction_sample():
+    if not transactions:
+        raise HTTPException(
+            status_code=503,
+            detail="Darījumu dati nav ielādēti"
+        )
+
+    return {
+        "sample": transactions[:5]
+    }
 @app.get("/valuation")
 def valuation(
     q: str = Query(min_length=3),
