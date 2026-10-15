@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
 
         if not reader.fieldnames:
             raise ValueError("CSV failā nav atrastas kolonnas")
-
+    
         logger.info("CSV kolonnas: %s", reader.fieldnames)
 
         addresses = list(reader)
