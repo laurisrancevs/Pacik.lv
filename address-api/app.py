@@ -330,6 +330,31 @@ def transaction_sample():
     return {
         "sample": transactions[:5]
     }
+ @app.get("/building-sample")
+def building_sample():
+    if not transactions:
+        raise HTTPException(
+            status_code=503,
+            detail="Darījumu dati nav ielādēti"
+        )
+
+    results = []
+
+    for row in transactions[:100]:
+        results.append({
+            "address": row.get("Adreses standartpieraksts_DTG", ""),
+            "building_year": row.get(
+                "Ekspluatācijas uzsākšanas gads(saraksts)_DTG_Z_E", ""
+            ),
+            "wall_material": row.get(
+                "Ārsienu un karkasu materiāls(saraksts)_DTG_Z_E", ""
+            ),
+            "floors": row.get(
+                "Virszemes stāvu skaits_DTG_Z_E", ""
+            )
+        })
+
+    return {"results": results}
 @app.get("/valuation")
 def valuation(
     q: str = Query(min_length=3),
