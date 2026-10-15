@@ -309,3 +309,65 @@ def search_transactions(
         "count": len(results),
         "results": results
     }
+@app.get("/valuation")
+def valuation(
+    q: str = Query(min_length=3),
+    area: float = Query(gt=0)
+):
+    query = q.casefold().strip()
+    comparable = []
+
+    for row in transactions:
+        address = row.get("Adreses standartpieraksts_DTG", "")
+
+        if query not in address.casefold():
+            continue
+
+        try:
+            price = float(
+                row.get("Darījuma summa_DTG", "")
+                .replace(" ", "")
+                .replace(",", ".")
+            )
+
+            apartment_area = float(
+                row.get("Dzīvokļa platība_DTG", "")
+                .replace(" ", "")
+                .replace(",", ".")
+            )
+
+            if price <= 0 or apartment_area <= 0:
+                continue
+
+            price_per_m2 = price / apartment_area
+
+            comparable.append({
+                "address": address,
+                "price": price,
+                "area": apartment_area,
+                "price_per_m2": round(price_per_m2, 2)
+            })
+
+        except (ValueError, TypeError):
+            continue
+
+    if not comparable:
+        raise HTTPException(
+            status_code=404,
+            detail="Nav atrasti piemēroti salīdzināmie darījumi"
+        )
+
+    average_price_per_m2 = sum(
+        item["price_per_m2"] for item in comparable
+    ) / len(comparable)
+
+    estimated_value = average_price_per_m2 * area
+
+    return {
+        "query": q,
+        "area": area,
+        "comparable_count": len(comparable),
+        "average_price_per_m2": round(average_price_per_m2, 2),
+        "estimated_value": round(estimated_value),
+        "comparables": comparable[:10]
+    }
