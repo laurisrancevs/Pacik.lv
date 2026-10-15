@@ -86,7 +86,10 @@ async def lifespan(app: FastAPI):
             for row in transactions_reader
             if row
         ]
-
+logger.info(
+    "Darījumu CSV kolonnas: %s",
+    transactions_reader.fieldnames
+)
         logger.info(
             "Ielādēti %s darījumu ieraksti",
             len(transactions)
