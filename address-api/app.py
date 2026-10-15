@@ -145,8 +145,9 @@ def transaction_sample():
             detail="Darījumu dati nav ielādēti"
         )
 
-    return transactions[0]
-    @app.get("/transactions/search")
+        return transactions[0]
+
+@app.get("/transactions/search")
 def search_transactions(q: str = Query(min_length=3)):
     if not transactions:
         raise HTTPException(
