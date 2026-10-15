@@ -411,7 +411,82 @@ def valuation(
                 ""
             )
         })
+    # Ja konkrētajā mājā ir mazāk par 3 salīdzināmiem darījumiem,
+    # meklējam papildu darījumus tajā pašā ielā un pilsētā.
+    if len(comparable) < 3 and house_number:
+        for row in transactions:
+            address = (
+                row.get("Adreses standartpieraksts_DTG", "")
+                or ""
+            )
 
+            address_normalized = address.casefold()
+
+            if street_query not in address_normalized:
+                continue
+
+            if city_query not in address_normalized:
+                continue
+
+            try:
+                price_raw = (
+                    row.get("Darījuma summa_DTG", "")
+                    or ""
+                )
+
+                area_raw = (
+                    row.get("Dzīvokļa platība_DTG", "")
+                    or ""
+                )
+
+                price = float(
+                    price_raw
+                    .replace(" ", "")
+                    .replace(",", ".")
+                )
+
+                apartment_area = float(
+                    area_raw
+                    .replace(" ", "")
+                    .replace(",", ".")
+                )
+
+            except (ValueError, TypeError):
+                continue
+
+            if price <= 0 or apartment_area <= 0:
+                continue
+
+            if (
+                apartment_area < area * 0.8
+                or apartment_area > area * 1.2
+            ):
+                continue
+
+            # Neieliekam vienu un to pašu darījumu atkārtoti
+            if any(
+                item["address"] == address
+                and item["price"] == price
+                and item["area"] == apartment_area
+                for item in comparable
+            ):
+                continue
+
+            price_per_m2 = price / apartment_area
+
+            comparable.append({
+                "address": address,
+                "price": price,
+                "area": apartment_area,
+                "price_per_m2": round(price_per_m2, 2),
+                "date": row.get("Darījuma datums_DTG", ""),
+                "rooms": row.get("Dzīvojamo telpu skaits_DTG", ""),
+                "floor": row.get("Zemākais stāvs_DTG", ""),
+                "building_year": row.get(
+                    "Ekspluatācijas uzsākšanas gads(saraksts)_DTG_Z_E",
+                    ""
+                )
+            })
         if not comparable:
             raise HTTPException(
                 status_code=404,
