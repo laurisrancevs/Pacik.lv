@@ -75,7 +75,7 @@ def search_address(q: str = Query(min_length=3)):
     query = q.casefold().strip()
     results = []
 
-        for row in addresses:
+    for row in addresses:
         address = row.get("STD", "")
 
         if query in address.casefold():
