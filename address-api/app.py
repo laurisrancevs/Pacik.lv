@@ -355,6 +355,46 @@ def building_sample():
         })
 
     return {"results": results}
+    @app.get("/building-info")
+def building_info(
+    q: str = Query(min_length=3)
+):
+    query = q.casefold().strip()
+
+    results = []
+
+    for row in transactions:
+        address = row.get(
+            "Adreses standartpieraksts_DTG",
+            ""
+        )
+
+        if query not in address.casefold():
+            continue
+
+        results.append({
+            "address": address,
+            "building_year": row.get(
+                "Ekspluatācijas uzsākšanas gads(saraksts)_DTG_Z_E",
+                ""
+            ),
+            "wall_material": row.get(
+                "Ārsienu un karkasu materiāls(saraksts)_DTG_Z_E",
+                ""
+            ),
+            "floors": row.get(
+                "Virszemes stāvu skaits_DTG_Z_E",
+                ""
+            )
+        })
+
+        if len(results) >= 20:
+            break
+
+    return {
+        "query": q,
+        "results": results
+    }
 @app.get("/valuation")
 def valuation(
     q: str = Query(min_length=3),
