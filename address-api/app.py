@@ -19,23 +19,33 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global addresses, transactions
+
     try:
         client = storage.Client()
+
         blob = client.bucket(BUCKET).blob(FILE)
         raw = blob.download_as_bytes()
 
         decoded = raw.decode("utf-8-sig")
-        reader = csv.DictReader(io.StringIO(decoded), delimiter=",")
+        reader = csv.DictReader(
+            io.StringIO(decoded),
+            delimiter=";"
+        )
 
         if not reader.fieldnames:
             raise ValueError("CSV failā nav atrastas kolonnas")
 
         logger.info("CSV kolonnas: %s", reader.fieldnames)
 
-                addresses = list(reader)
-        logger.info("Ielādēti %s adrešu ieraksti", len(addresses))
+        addresses = list(reader)
+        logger.info(
+            "Ielādēti %s adrešu ieraksti",
+            len(addresses)
+        )
 
-        transactions_blob = client.bucket(BUCKET).blob(TRANSACTIONS_FILE)
+        transactions_blob = client.bucket(BUCKET).blob(
+            TRANSACTIONS_FILE
+        )
         transactions_raw = transactions_blob.download_as_bytes()
 
         transactions_decoded = transactions_raw.decode("utf-8-sig")
@@ -52,9 +62,12 @@ async def lifespan(app: FastAPI):
         )
 
     except Exception:
-        logger.exception("Neizdevās ielādēt adrešu un darījumu datus")
+        logger.exception(
+            "Neizdevās ielādēt adrešu un darījumu datus"
+        )
         addresses = []
         transactions = []
+
     yield
 
 
