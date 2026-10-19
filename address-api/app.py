@@ -1027,6 +1027,42 @@ def valuation(
         ),
         "comparables": comparable[:10]
     }
+@app.get("/address-coordinate-debug")
+def address_coordinate_debug(
+    q: str = Query(min_length=3)
+):
+    """Inspect coordinate fields available for one exact address."""
+    if not addresses:
+        raise HTTPException(status_code=503, detail="Adrešu dati nav ielādēti")
+
+    query = q.casefold().strip().rstrip(",")
+
+    for row in addresses:
+        address = (row.get("STD", "") or "").strip()
+        normalized = address.casefold()
+        without_postcode = normalized.split(", lv-")[0]
+
+        if normalized == query or without_postcode == query:
+            coordinate_fields = {
+                key: value
+                for key, value in row.items()
+                if value and (
+                    "koord" in key.casefold()
+                    or key.casefold() in {"x", "y", "lat", "lon", "lng"}
+                    or "latitude" in key.casefold()
+                    or "longitude" in key.casefold()
+                )
+            }
+            return {
+                "address": address,
+                "object_code": row.get("KODS", ""),
+                "coordinate_fields": coordinate_fields,
+                "available_columns": list(row.keys()),
+            }
+
+    raise HTTPException(status_code=404, detail="Adrese nav atrasta")
+
+
 @app.get("/address-debug")
 def address_debug(
     q: str = Query(min_length=3)
