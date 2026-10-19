@@ -1,7 +1,9 @@
 import csv
 import io
 import logging
+import os
 import sqlite3
+import json
 from datetime import datetime, date
 from contextlib import asynccontextmanager
 
@@ -22,6 +24,8 @@ BUILDINGS_DB_PATH = "/tmp/buildings.db"
 TRANSACTIONS_FILE = "transactions/TG.csv"
 SS_MARKET_FILE = "market/ss_listings.csv"
 CADASTRE_FEATURES_FILE = "cadastre/property_features.csv"
+CADASTRE_DB_FILE = "cadastre/cadastre.db"
+CADASTRE_DB_PATH = "/tmp/cadastre.db"
 
 addresses = []
 transactions = []
@@ -151,6 +155,17 @@ async def lifespan(app: FastAPI):
             logger.exception("Neizdevās ielādēt SS.COM tirgus kešu; VZD modelis turpina strādāt")
             ss_listings = []
 
+        # Canonical VZD cadastral index built from the four official XML ZIPs.
+        try:
+            cad_db_blob = bucket.blob(CADASTRE_DB_FILE)
+            if cad_db_blob.exists(client):
+                cad_db_blob.download_to_filename(CADASTRE_DB_PATH)
+                logger.info("Kadastra SQLite indekss ielādēts")
+            elif os.path.exists(CADASTRE_DB_PATH):
+                os.remove(CADASTRE_DB_PATH)
+        except Exception:
+            logger.exception("Neizdevās ielādēt Kadastra SQLite indeksu")
+
         # Enriched cadastral layer. A preprocessing job can join VZD Property,
         # Parcel, PremiseGroup, Encumbrance and Valuation datasets into this
         # compact address-keyed CSV. Missing enrichment must never stop valuation.
@@ -234,6 +249,50 @@ def get_building_by_varis_code(varis_code: str):
         con.close()
 
 
+def get_cadastre_records(varis_code=None, cadastral_id=None, limit=30):
+    if not os.path.exists(CADASTRE_DB_PATH):
+        return []
+    con = sqlite3.connect(CADASTRE_DB_PATH)
+    con.row_factory = sqlite3.Row
+    try:
+        if varis_code:
+            rows = con.execute(
+                "SELECT dataset,cadastral_id,varis_code,record_type,data_json FROM records WHERE varis_code=? LIMIT ?",
+                (str(varis_code).strip(), limit),
+            ).fetchall()
+        elif cadastral_id:
+            rows = con.execute(
+                "SELECT dataset,cadastral_id,varis_code,record_type,data_json FROM records WHERE cadastral_id=? LIMIT ?",
+                (str(cadastral_id).replace(" ","").replace("-",""), limit),
+            ).fetchall()
+        else:
+            return []
+        out = []
+        for row in rows:
+            item = dict(row)
+            try:
+                item["data"] = json.loads(item.pop("data_json"))
+            except Exception:
+                item["data"] = {}
+                item.pop("data_json", None)
+            out.append(item)
+        return out
+    finally:
+        con.close()
+
+
+def cadastre_index_stats():
+    if not os.path.exists(CADASTRE_DB_PATH):
+        return {"available": False, "records": 0}
+    con = sqlite3.connect(CADASTRE_DB_PATH)
+    try:
+        total = con.execute("SELECT COUNT(*) FROM records").fetchone()[0]
+        grouped = dict(con.execute("SELECT dataset,COUNT(*) FROM records GROUP BY dataset").fetchall())
+        return {"available": True, "records": total, "datasets": grouped}
+    finally:
+        con.close()
+
+
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 def home():
     try:
@@ -251,7 +310,8 @@ def api_status():
         "loaded_records": len(addresses),
         "transaction_records": len(transactions),
         "ss_market_records": len(ss_listings),
-        "cadastre_feature_records": len(cadastre_features)
+        "cadastre_feature_records": len(cadastre_features),
+        "cadastre_index": cadastre_index_stats()
     }
 
 
@@ -1323,12 +1383,15 @@ def valuation(
     # do not turn cadastral value, encumbrances or parcel facts into an arbitrary
     # price multiplier before they are calibrated against actual sale transactions.
     cadastre_record = cadastre_features.get(query_address)
+    indexed_cadastre = get_cadastre_records(varis_code=target_varis_code) if target_varis_code else []
     cadastre_evidence = {
         "available": bool(cadastre_record),
         "valuation": None,
         "encumbrances": None,
         "premise_group": None,
         "parcel": None,
+        "indexed_records": len(indexed_cadastre),
+        "datasets": sorted({item.get("dataset") for item in indexed_cadastre if item.get("dataset")}),
     }
     if cadastre_record:
         cadastre_evidence["valuation"] = parse_number(
@@ -1365,7 +1428,7 @@ def valuation(
         "area": area,
         "target_building": target_building,
         "target_varis_code": target_varis_code or None,
-        "selection_method": "hierarchical_geo_recency_v11_cadastre_evidence",
+        "selection_method": "hierarchical_geo_recency_v12_vzd_cadastre_index",
         "transaction_estimated_value": round(transaction_estimated_value),
         "cadastre_features": cadastre_evidence,
         "ss_market": ss_market,
