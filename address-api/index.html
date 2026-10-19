@@ -7,19 +7,24 @@
 <style>
 :root{--navy:#071b2c;--teal:#45d7c2;--teal2:#13ad9d;--ink:#081426;--muted:#687386;--soft:#effbf8;--white:#fff}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:#fff}
-.hero{min-height:648px;position:relative;color:#fff;background:linear-gradient(90deg,rgba(3,17,31,.91) 0%,rgba(3,17,31,.66) 48%,rgba(3,17,31,.22) 100%),linear-gradient(180deg,rgba(3,17,31,.08),rgba(3,17,31,.38)),url('https://www.latvia.travel/sites/default/files/styles/mobile_promo/public/media_image/29039-riga2014_institute_of_latvia_aleksandrs_kendenkovs.jpg?itok=uDggQcDx') center 48%/cover no-repeat}
-.nav{max-width:1200px;margin:auto;padding:22px 28px;display:flex;align-items:center;gap:42px}.logo{font-size:27px;font-weight:900;letter-spacing:.05em;white-space:nowrap}.logo b{color:var(--teal)}.logo small{display:block;font-size:8px;letter-spacing:.18em;margin-top:3px}.links{display:flex;gap:36px;margin:auto}.links a{color:#fff;text-decoration:none;font-size:14px;font-weight:650}.outline{border:1px solid rgba(255,255,255,.8);border-radius:999px;padding:12px 22px;color:#fff;text-decoration:none;font-weight:700;font-size:13px}
-.hero-inner{max-width:1200px;margin:auto;padding:72px 28px 74px}.hero-content{max-width:700px}.pill{display:inline-flex;gap:9px;align-items:center;border:1px solid rgba(69,215,194,.55);border-radius:999px;padding:9px 15px;color:#eef;font-size:13px;background:rgba(6,30,43,.32)}.pill b{color:var(--teal)}
-.hero h1{font-size:54px;line-height:1.02;letter-spacing:-.045em;margin:25px 0 14px;max-width:760px}.accent{color:var(--teal)}.lead{font-size:23px;line-height:1.35;margin:0 0 30px;max-width:610px}.mini-benefits{display:flex;gap:28px;margin:28px 0}.mini{display:flex;gap:11px;align-items:center}.ico{width:44px;height:44px;border-radius:50%;background:rgba(18,191,168,.18);display:grid;place-items:center;color:var(--teal);font-size:22px}.mini strong{display:block;font-size:13px}.mini span{font-size:11px;color:#dbe5ea}
+.hero{min-height:660px;position:relative;color:#fff;background:
+linear-gradient(90deg,rgba(2,18,32,.92) 0%,rgba(2,18,32,.74) 38%,rgba(2,18,32,.28) 72%,rgba(2,18,32,.12) 100%),
+linear-gradient(180deg,rgba(2,18,32,.08) 0%,rgba(2,18,32,.08) 55%,rgba(2,18,32,.48) 100%),
+url('https://images.pexels.com/photos/19856364/pexels-photo-19856364.jpeg?auto=compress&cs=tinysrgb&w=2400') center 48%/cover no-repeat;
+background-color:#071b2c}
+.nav{max-width:1240px;margin:auto;padding:22px 30px;display:flex;align-items:center;gap:42px;position:relative;z-index:2}.logo{font-size:27px;font-weight:900;letter-spacing:.05em;white-space:nowrap}.logo b{color:var(--teal)}.logo small{display:block;font-size:8px;letter-spacing:.18em;margin-top:3px}.links{display:flex;gap:36px;margin:auto}.links a{color:#fff;text-decoration:none;font-size:14px;font-weight:650}.outline{border:1px solid rgba(255,255,255,.8);border-radius:999px;padding:12px 22px;color:#fff;text-decoration:none;font-weight:700;font-size:13px}
+.hero-inner{max-width:1240px;margin:auto;padding:70px 30px 68px;position:relative;z-index:2}.hero-content{max-width:760px}.pill{display:inline-flex;gap:9px;align-items:center;border:1px solid rgba(69,215,194,.55);border-radius:999px;padding:9px 15px;color:#eef;font-size:13px;background:rgba(6,30,43,.32)}.pill b{color:var(--teal)}
+.hero h1{font-size:58px;line-height:1.02;letter-spacing:-.045em;margin:24px 0 14px;max-width:790px;text-shadow:0 2px 20px rgba(0,0,0,.18)}.accent{color:var(--teal)}.lead{font-size:23px;line-height:1.35;margin:0 0 30px;max-width:610px}.mini-benefits{display:flex;gap:28px;margin:28px 0}.mini{display:flex;gap:11px;align-items:center}.ico{width:44px;height:44px;border-radius:50%;background:rgba(18,191,168,.18);display:grid;place-items:center;color:var(--teal);font-size:22px}.mini strong{display:block;font-size:13px}.mini span{font-size:11px;color:#dbe5ea}
 .searchbar{max-width:720px;background:#fff;padding:8px;border-radius:14px;display:flex;box-shadow:0 18px 45px rgba(0,0,0,.22);position:relative}.searchbar input{flex:1;border:0;outline:0;padding:15px 16px;font-size:15px;min-width:0}.searchbar button{border:0;background:linear-gradient(135deg,var(--teal2),#37c9b8);color:#fff;border-radius:10px;padding:0 30px;font-weight:800;font-size:15px;cursor:pointer}.hint{font-size:12px;font-style:italic;margin:14px 0 0 120px;color:#fff}
 #addressSuggestions{position:absolute;left:8px;right:205px;top:64px;z-index:20;max-height:240px;overflow:auto;border-radius:10px;box-shadow:0 12px 35px rgba(0,0,0,.18)}#addressSuggestions>div{background:#fff;color:var(--ink);padding:12px 15px;border-bottom:1px solid #edf0f2;cursor:pointer;font-size:14px}#addressSuggestions>div:hover{background:#effbf8}
-.section{padding:55px 28px}.wrap{max-width:1120px;margin:auto}.section h2{text-align:center;font-size:31px;letter-spacing:-.03em;margin:0 0 36px}.section h2 b{color:var(--teal2)}
-.features{display:grid;grid-template-columns:repeat(4,1fr);gap:30px;text-align:center}.feature .round{width:68px;height:68px;margin:0 auto 14px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-size:28px}.feature h3{font-size:16px;margin:0 0 7px}.feature p{font-size:13px;line-height:1.5;color:var(--muted);margin:0}
-.consult{margin-top:38px;background:linear-gradient(90deg,#e9fbf7,#f6fffd);border-radius:13px;padding:20px 28px;display:flex;align-items:center;gap:18px}.consult .copy{flex:1}.consult strong{display:block;margin-bottom:5px}.consult span{font-size:13px;color:var(--muted)}.consult a{border:1px solid var(--ink);border-radius:12px;padding:13px 22px;text-decoration:none;color:var(--ink);font-weight:750;font-size:13px}
-.how{background:#fbfcfc}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}.step{padding:26px;border:1px solid #e8eeee;border-radius:18px;background:#fff}.step-num{color:var(--teal2);font-weight:900;font-size:13px}.step h3{margin:9px 0}.step p{color:var(--muted);font-size:14px;line-height:1.55}
+.section{padding:64px 28px}.wrap{max-width:1180px;margin:auto}.section h2{text-align:center;font-size:34px;letter-spacing:-.035em;margin:0 0 42px}.section h2 b{color:var(--teal2)}
+.features{display:grid;grid-template-columns:repeat(4,1fr);gap:30px;text-align:center}.feature .round{width:72px;height:72px;margin:0 auto 16px;border-radius:50%;background:linear-gradient(145deg,#e9fbf7,#f7fffd);border:1px solid #dff5f0;display:grid;place-items:center;font-size:28px;color:#09263b}.feature h3{font-size:16px;margin:0 0 7px}.feature p{font-size:13px;line-height:1.5;color:var(--muted);margin:0}
+.consult{margin-top:44px;background:linear-gradient(90deg,#e9fbf7,#f6fffd);border-radius:13px;padding:20px 28px;display:flex;align-items:center;gap:18px}.consult .copy{flex:1}.consult strong{display:block;margin-bottom:5px}.consult span{font-size:13px;color:var(--muted)}.consult a{border:1px solid var(--ink);border-radius:12px;padding:13px 22px;text-decoration:none;color:var(--ink);font-weight:750;font-size:13px}
+.how{background:#fbfcfc}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}.step{padding:30px;border:1px solid #e3eeec;border-radius:18px;background:#fff;box-shadow:0 12px 34px rgba(7,27,44,.05)}.step-num{color:var(--teal2);font-weight:900;font-size:13px}.step h3{margin:9px 0}.step p{color:var(--muted);font-size:14px;line-height:1.55}
 .form-shell{max-width:720px;margin:0 auto;background:#fff;border-radius:22px;padding:34px;box-shadow:0 20px 60px rgba(6,30,43,.14);color:var(--ink)}#step2,#step3{display:none}.progress{font-size:12px;color:var(--teal2);font-weight:800;margin-bottom:10px}.form-shell h2{text-align:left;margin:0 0 10px}.form-shell p{color:var(--muted)}.address-box,.result-meta{background:#f1f7f5;padding:13px;border-radius:10px;margin:12px 0;font-weight:650}.form-shell input,.form-shell select{width:100%;padding:14px;margin-top:11px;border:1px solid #d9e2e1;border-radius:10px;font-size:15px;background:#fff}.form-shell button{width:100%;border:0;border-radius:10px;padding:15px;margin-top:14px;background:var(--navy);color:#fff;font-weight:800;font-size:15px;cursor:pointer}.form-shell .secondary{background:#eef2f2;color:var(--ink)}.privacy-note{font-size:11px}.success{text-align:center}.success h1{font-size:40px}.error-message{background:#fff1f1;color:#8a1c1c;padding:13px;border-radius:10px}
 .faq{max-width:800px;margin:auto}.faq details{border-bottom:1px solid #e6ebeb;padding:18px 0}.faq summary{font-weight:750;cursor:pointer}.faq p{color:var(--muted);font-size:14px}
-footer{background:var(--navy);color:#d8e2e7;padding:36px 28px;text-align:center;font-size:12px}
+footer{background:var(--navy);color:#d8e2e7;padding:44px 28px;text-align:center;font-size:12px}
+@media(min-width:1400px){.hero{min-height:700px}.hero-inner{padding-top:82px}.hero h1{font-size:62px}}
 @media(max-width:800px){.links{display:none}.nav{justify-content:space-between}.hero{min-height:auto}.hero-inner{padding-top:55px}.hero h1{font-size:43px}.lead{font-size:19px}.mini-benefits{flex-direction:column;gap:12px}.searchbar{display:block}.searchbar button{width:100%;padding:14px}.hint{margin-left:0}.features,.steps{grid-template-columns:1fr 1fr}.consult{align-items:flex-start;flex-direction:column}#addressSuggestions{right:8px;top:58px}}
 @media(max-width:520px){.outline{display:none}.hero h1{font-size:38px}.features,.steps{grid-template-columns:1fr}.section{padding:44px 18px}.hero-inner,.nav{padding-left:18px;padding-right:18px}.form-shell{padding:24px 18px}}
 </style>
@@ -50,7 +55,7 @@ footer{background:var(--navy);color:#d8e2e7;padding:36px 28px;text-align:center;
 <input id="area" type="number" min="1" placeholder="Platība m²"><select id="condition"><option value="">Īpašuma stāvoklis</option><option value="Jauns / renovēts">Jauns / renovēts</option><option value="Labs">Labs</option><option value="Vidējs">Vidējs</option><option value="Nepieciešams remonts">Nepieciešams remonts</option></select>
 <input id="phone" type="tel" placeholder="Tālruņa numurs *"><input id="name" type="text" placeholder="Vārds (nav obligāti)"><input id="email" type="email" placeholder="E-pasts (nav obligāti)">
 <select id="sellingTime"><option value="">Kad apsver īpašuma pārdošanu?</option><option value="Tikai interesējos">Tikai interesējos</option><option value="Apsveru pārdošanu (3–6 mēn.)">Apsveru pārdošanu (3–6 mēn.)</option><option value="Vēlos pārdot tuvākajā laikā">Vēlos pārdot tuvākajā laikā</option></select>
-<button onclick="submitForm()">Uzzināt vērtību</button><p class="privacy-note">Iesniedzot informāciju, tu piekrīti, ka PACIK.LV to izmanto vērtējuma sagatavošanai un saziņai par tavu pieprasījumu.</p><button class="secondary" onclick="backStep()">Atpakaļ</button></div>
+<button id="valuationSubmit" onclick="submitForm()">Uzzināt vērtību</button><p class="privacy-note">Iesniedzot informāciju, tu piekrīti, ka PACIK.LV to izmanto vērtējuma sagatavošanai un saziņai par tavu pieprasījumu.</p><button class="secondary" onclick="backStep()">Atpakaļ</button></div>
 <div id="step3" class="success"><h2>Tava īpašuma aptuvenā tirgus vērtība</h2><h1 id="valuationResult">Aprēķinām...</h1><p id="valuationInfo">Vērtējums balstīts uz salīdzināmiem nekustamā īpašuma darījumiem.</p><div id="valuationMeta" class="result-meta" style="display:none"></div><p id="valuationError" class="error-message" style="display:none"></p><button id="consultationButton" style="display:none" onclick="requestConsultation()">Vēlos konsultāciju par pārdošanu</button></div>
 </div></section>
 
@@ -111,6 +116,7 @@ addressInput.addEventListener("input", async function () {
 
       document.getElementById("step2").style.display =
         "block";
+      document.getElementById("vertesana").scrollIntoView({behavior:"smooth", block:"start"});
     }
 
 
@@ -124,6 +130,7 @@ addressInput.addEventListener("input", async function () {
 
 
  async function submitForm() {
+    const submitButton = document.getElementById("valuationSubmit");
     const address = document.getElementById("address").value.trim();
 
       const propertyType =
@@ -195,6 +202,8 @@ try {
   // Keep the error in the console so Firebase permissions/config can be fixed separately.
   console.error("Saglabāšanas kļūda:", error);
 }
+submitButton.disabled = true;
+submitButton.textContent = "Aprēķinām vērtību…";
 document.getElementById("step2").style.display = "none";
 document.getElementById("step3").style.display = "block";
 document.getElementById("valuationResult").textContent = "Aprēķinām...";
@@ -270,6 +279,9 @@ try {
         error.message || "Vērtējumu neizdevās aprēķināt.";
     document.getElementById("valuationError").style.display = "block";
     document.getElementById("consultationButton").style.display = "block";
+} finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Uzzināt vērtību";
 }
     }
 
