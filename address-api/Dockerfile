@@ -2,10 +2,10 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY address-api/requirements.txt ./requirements.txt
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY address-api/app.py ./app.py
+COPY app.py .
 COPY index.html ./index.html
 
 ENV PORT=8080
