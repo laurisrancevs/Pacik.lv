@@ -1319,6 +1319,26 @@ def valuation(
     if broad_fallback_count > 0:
         confidence_points = min(confidence_points, 4)
 
+    # Kadastra enrichment improves evidence quality and transparency. We deliberately
+    # do not turn cadastral value, encumbrances or parcel facts into an arbitrary
+    # price multiplier before they are calibrated against actual sale transactions.
+    cadastre_record = cadastre_features.get(query_address)
+    cadastre_evidence = {
+        "available": bool(cadastre_record),
+        "valuation": None,
+        "encumbrances": None,
+        "premise_group": None,
+        "parcel": None,
+    }
+    if cadastre_record:
+        cadastre_evidence["valuation"] = parse_number(
+            cadastre_record.get("universal_cadastral_value")
+            or cadastre_record.get("cadastral_value")
+        )
+        cadastre_evidence["encumbrances"] = cadastre_record.get("encumbrances") or None
+        cadastre_evidence["premise_group"] = cadastre_record.get("premise_group_code") or None
+        cadastre_evidence["parcel"] = cadastre_record.get("parcel_code") or None
+
     if confidence_points >= 5:
         confidence = "high"
         confidence_label = "Augsta"
@@ -1345,9 +1365,9 @@ def valuation(
         "area": area,
         "target_building": target_building,
         "target_varis_code": target_varis_code or None,
-        "selection_method": "hierarchical_geo_recency_v10_cadastre_enriched",
+        "selection_method": "hierarchical_geo_recency_v11_cadastre_evidence",
         "transaction_estimated_value": round(transaction_estimated_value),
-        "cadastre_features": cadastre_features.get(query_address),
+        "cadastre_features": cadastre_evidence,
         "ss_market": ss_market,
         "ss_adjustment_percent": round(ss_adjustment_percent * 100, 2),
         "comparable_count": comparable_count,
