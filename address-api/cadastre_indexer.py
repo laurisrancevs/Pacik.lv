@@ -77,9 +77,6 @@ def init_db():
       record_type TEXT,
       data_json TEXT NOT NULL
     );
-    CREATE INDEX IF NOT EXISTS idx_records_cadastral ON records(cadastral_id);
-    CREATE INDEX IF NOT EXISTS idx_records_varis ON records(varis_code);
-    CREATE INDEX IF NOT EXISTS idx_records_dataset ON records(dataset);
     CREATE TABLE IF NOT EXISTS metadata (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
@@ -151,6 +148,12 @@ def build():
                         (f"records_{dataset}", str(total)))
             con.commit()
 
+    if any(count == 0 for count in totals.values()):
+        raise RuntimeError(f"One or more VZD datasets produced no records: {totals}; index not uploaded")
+    log.info("Creating lookup indexes after bulk import")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_records_cadastral ON records(cadastral_id)")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_records_varis ON records(varis_code)")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_records_dataset ON records(dataset)")
     con.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('schema_version','1')")
     con.commit()
     con.execute("PRAGMA wal_checkpoint(TRUNCATE)")
@@ -158,8 +161,6 @@ def build():
     con.execute("VACUUM")
     con.close()
 
-    if not totals.get("premise_group"):
-        raise RuntimeError("No premise group records; index not uploaded")
     out = bucket.blob(OUTPUT_OBJECT)
     out.upload_from_filename(LOCAL_DB, content_type="application/x-sqlite3")
     log.info("Uploaded gs://%s/%s: %s", BUCKET, OUTPUT_OBJECT, totals)
