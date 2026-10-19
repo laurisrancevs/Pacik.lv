@@ -1,0 +1,97 @@
+name: PACIK API smoke tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 4 * * *"
+
+jobs:
+  production-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Cloud Run deployment
+        run: sleep 180
+
+      - name: Check PACIK production API
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          BASE = "https://pacik-address-api-581028202745.europe-west1.run.app"
+
+          cases = [
+              {
+                  "name": "Purvciema 20",
+                  "params": {"q": "Purvciema iela 20", "area": "50", "city": "Rīga"},
+                  "status": 200,
+                  "check": lambda d: (
+                      d.get("selection_method") == "hierarchical_geo_similarity_v3"
+                      and d.get("estimated_value", 0) > 0
+                      and d.get("comparable_count", 0) > 0
+                      and bool(d.get("target_coordinates"))
+                  ),
+              },
+              {
+                  "name": "Raņķa dambis 5",
+                  "params": {"q": "Raņķa dambis 5", "area": "60", "city": "Rīga"},
+                  "status": 200,
+                  "check": lambda d: (
+                      d.get("estimated_value", 0) > 0
+                      and d.get("comparable_count", 0) > 0
+                  ),
+              },
+              {
+                  "name": "Purvciema 38 guard",
+                  "params": {"q": "Purvciema iela 38", "area": "50", "city": "Rīga"},
+                  "status": 422,
+                  "check": lambda d: (
+                      isinstance(d.get("detail"), dict)
+                      and d["detail"].get("code") == "building_type_mismatch"
+                  ),
+              },
+          ]
+
+          failures = []
+          for case in cases:
+              url = BASE + "/valuation?" + urllib.parse.urlencode(case["params"])
+              status = None
+              data = {}
+              last_error = None
+
+              for attempt in range(6):
+                  try:
+                      with urllib.request.urlopen(url, timeout=90) as response:
+                          status = response.status
+                          data = json.loads(response.read().decode("utf-8"))
+                      break
+                  except urllib.error.HTTPError as exc:
+                      status = exc.code
+                      data = json.loads(exc.read().decode("utf-8"))
+                      break
+                  except Exception as exc:
+                      last_error = str(exc)
+                      time.sleep(30)
+
+              passed = status == case["status"] and case["check"](data)
+              print(f'{case["name"]}: {"PASS" if passed else "FAIL"} (HTTP {status})')
+              if not passed:
+                  failures.append({
+                      "name": case["name"],
+                      "status": status,
+                      "error": last_error,
+                      "response": data,
+                  })
+
+          if failures:
+              print(json.dumps(failures, ensure_ascii=False, indent=2))
+              raise SystemExit(1)
+
+          print("All PACIK production smoke tests passed.")
+          PY
