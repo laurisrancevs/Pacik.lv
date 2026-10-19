@@ -90,14 +90,21 @@ def index_xml(con, dataset, stream):
     count = 0
     # End-event streaming keeps memory bounded even for very large VZD XML files.
     for event, elem in ET.iterparse(stream, events=("end",)):
+        # Only index the smallest XML object that directly carries an identifier.
+        # This avoids re-indexing the same object again through every ancestor node.
+        direct_fields = {}
+        for child in list(elem):
+            if len(child) == 0:
+                value = (child.text or "").strip()
+                if value:
+                    direct_fields[local_name(child.tag)] = value
+        direct_cadastral, direct_varis = identifiers(direct_fields)
+        if not direct_cadastral and not direct_varis:
+            elem.clear()
+            continue
+
         fields = flatten_leaves(elem)
-        if len(fields) < 2:
-            elem.clear()
-            continue
         cadastral, varis = identifiers(fields)
-        if not cadastral and not varis:
-            elem.clear()
-            continue
         record_type = local_name(elem.tag)
         payload = json.dumps(fields, ensure_ascii=False, separators=(",", ":"))
         cad_values = sorted(cadastral) or [None]
