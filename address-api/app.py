@@ -2,6 +2,7 @@ import csv
 import io
 import logging
 import sqlite3
+from datetime import datetime, date
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Query, HTTPException
@@ -650,6 +651,39 @@ def valuation(
             for existing in items
         )
 
+
+    def parse_transaction_date(value):
+        """Parse known TG transaction date formats without guessing ambiguous dates."""
+        raw = (value or "").strip()
+        if not raw:
+            return None
+
+        for fmt in ("%Y-%m-%d", "%Y.%m.%d", "%d.%m.%Y", "%d/%m/%Y"):
+            try:
+                return datetime.strptime(raw[:10], fmt).date()
+            except ValueError:
+                pass
+        return None
+
+    def recency_weight(item):
+        """Give recent registered sales more influence while retaining older evidence."""
+        transaction_date = parse_transaction_date(item.get("date"))
+        if transaction_date is None:
+            return 0.70
+
+        age_days = max(0, (date.today() - transaction_date).days)
+        age_months = age_days / 30.4375
+
+        if age_months <= 6:
+            return 1.00
+        if age_months <= 12:
+            return 0.90
+        if age_months <= 24:
+            return 0.75
+        if age_months <= 36:
+            return 0.60
+        return 0.45
+
     # --------------------------------------------------
     # 1. MEKLĒJAM KONKRĒTAJĀ MĀJĀ
     # --------------------------------------------------
@@ -1050,8 +1084,12 @@ def valuation(
     # Weighted estimate: the most similar transactions influence the
     # valuation more than weaker comparables. Keep a small minimum weight so
     # valid filtered transactions still contribute without dominating.
+    for item in comparable:
+        item["recency_weight"] = recency_weight(item)
+
     weights = [
         max(item.get("similarity_score", 0.0), 0.10)
+        * item.get("recency_weight", 0.70)
         for item in comparable
     ]
     total_weight = sum(weights)
@@ -1137,7 +1175,7 @@ def valuation(
         "area": area,
         "target_building": target_building,
         "target_varis_code": target_varis_code or None,
-        "selection_method": "hierarchical_geo_similarity_v3",
+        "selection_method": "hierarchical_geo_recency_v4",
         "comparable_count": comparable_count,
         "building_comparable_count": building_count,
         "street_comparable_count": street_count,
@@ -1175,6 +1213,14 @@ def valuation(
         "confidence_label": confidence_label,
         "confidence_points": confidence_points,
         "average_similarity_score": round(average_similarity, 4),
+        "recency_weighting": {
+            "0_6_months": 1.00,
+            "6_12_months": 0.90,
+            "12_24_months": 0.75,
+            "24_36_months": 0.60,
+            "over_36_months": 0.45,
+            "unknown_date": 0.70,
+        },
         "range_percent": round(range_percent * 100),
         "median_price_per_m2": round(
             median_price_per_m2,
