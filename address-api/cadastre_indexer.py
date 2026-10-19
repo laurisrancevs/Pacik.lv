@@ -49,18 +49,20 @@ def flatten_leaves(element):
 def identifiers(fields):
     cadastral = set()
     varis = set()
+    # VZD schemas use names such as PremiseGroupCadastreNr and
+    # PremiseGroupVARIScode (and analogous names in the other datasets).
+    # Match the schema semantics instead of the English word "cadastre".
     for key, raw in fields.items():
         values = raw if isinstance(raw, list) else [raw]
         kl = key.casefold()
         for value in values:
             text = str(value).strip()
             compact = text.replace("-", "").replace(" ", "")
-            if "varis" in kl and compact:
+            if "varis" in kl and compact.isdigit():
                 varis.add(compact)
-            if ("cadastre" in kl or "kadastr" in kl) and DIGITS.match(compact):
+            if ("cadastre" in kl or "cadastr" in kl or "kadastr" in kl) and compact.isdigit():
                 cadastral.add(compact)
     return cadastral, varis
-
 
 def init_db():
     con = sqlite3.connect(LOCAL_DB)
@@ -90,21 +92,14 @@ def index_xml(con, dataset, stream):
     count = 0
     # End-event streaming keeps memory bounded even for very large VZD XML files.
     for event, elem in ET.iterparse(stream, events=("end",)):
-        # Only index the smallest XML object that directly carries an identifier.
-        # This avoids re-indexing the same object again through every ancestor node.
-        direct_fields = {}
-        for child in list(elem):
-            if len(child) == 0:
-                value = (child.text or "").strip()
-                if value:
-                    direct_fields[local_name(child.tag)] = value
-        direct_cadastral, direct_varis = identifiers(direct_fields)
-        if not direct_cadastral and not direct_varis:
-            elem.clear()
-            continue
-
+        # VZD object records carry identifiers such as *CadastreNr and
+        # *VARIScode. Index the record that directly contains those identifier
+        # elements; nested descriptive structures are kept in the JSON payload.
         fields = flatten_leaves(elem)
         cadastral, varis = identifiers(fields)
+        if not cadastral and not varis:
+            elem.clear()
+            continue
         record_type = local_name(elem.tag)
         payload = json.dumps(fields, ensure_ascii=False, separators=(",", ":"))
         cad_values = sorted(cadastral) or [None]
