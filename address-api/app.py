@@ -6,6 +6,7 @@ from datetime import datetime, date
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Query, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import storage
 
@@ -186,8 +187,12 @@ def get_building_by_varis_code(varis_code: str):
         con.close()
 
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 def home():
+    return FileResponse("/app/index.html", media_type="text/html")
+
+@app.get("/api")
+def api_status():
     return {
         "status": "ok",
         "service": "PACIK.LV Address API",
