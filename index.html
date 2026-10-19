@@ -7,63 +7,160 @@
   <title>PACIK.LV — Uzzini sava īpašuma vērtību</title>
 
   <style>
-    * {
-      box-sizing: border-box;
+    :root {
+      --navy: #0b1f2a;
+      --navy-2: #123441;
+      --mint: #9fe3cf;
+      --mint-dark: #57bda0;
+      --paper: #f4f2ec;
+      --white: #ffffff;
+      --muted: #637078;
+      --line: #dce3e2;
+      --danger: #8a1c1c;
     }
+
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      color: #111;
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--navy);
+      background:
+        radial-gradient(circle at 85% 12%, rgba(159,227,207,.28), transparent 30%),
+        linear-gradient(145deg, #eef4f1 0%, var(--paper) 48%, #e8efed 100%);
+      min-height: 100vh;
+    }
+
+    .topbar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 24px clamp(20px, 5vw, 72px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 2;
+    }
+
+    .brand {
+      font-weight: 900;
+      letter-spacing: -.04em;
+      font-size: 24px;
+    }
+
+    .trust {
+      font-size: 13px;
+      color: var(--muted);
     }
 
     .hero {
       min-height: 100vh;
-      display: flex;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(420px, 580px);
+      gap: clamp(30px, 6vw, 90px);
       align-items: center;
-      justify-content: center;
-      padding: 30px 20px;
+      max-width: 1240px;
+      margin: auto;
+      padding: 110px clamp(20px, 5vw, 72px) 60px;
+    }
+
+    .hero-copy { max-width: 610px; }
+
+    .eyebrow {
+      display: inline-flex;
+      padding: 8px 12px;
+      border: 1px solid rgba(11,31,42,.12);
+      border-radius: 999px;
+      background: rgba(255,255,255,.55);
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .hero-copy h1 {
+      margin: 0;
+      font-size: clamp(44px, 6vw, 78px);
+      line-height: .98;
+      letter-spacing: -.055em;
+      max-width: 760px;
+    }
+
+    .hero-copy p {
+      max-width: 540px;
+      margin: 24px 0 0;
+      font-size: 18px;
+      line-height: 1.65;
+      color: var(--muted);
+    }
+
+    .benefits {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-top: 28px;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .benefits span::before {
+      content: "✓";
+      margin-right: 7px;
+      color: var(--mint-dark);
     }
 
     .card {
       width: 100%;
-      max-width: 580px;
-      background: white;
-      padding: 40px;
-      border-radius: 20px;
-      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.12);
+      background: rgba(255,255,255,.92);
+      padding: clamp(26px, 4vw, 42px);
+      border: 1px solid rgba(11,31,42,.08);
+      border-radius: 28px;
+      box-shadow: 0 24px 70px rgba(11,31,42,.13);
+      backdrop-filter: blur(12px);
     }
 
-    h1 {
-      margin: 0 0 12px;
-      font-size: 42px;
+    .card h1 {
+      font-size: 22px;
+      margin: 0 0 8px;
+      letter-spacing: -.03em;
     }
 
-    h2 {
-      margin-bottom: 10px;
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: clamp(26px, 3vw, 34px);
+      letter-spacing: -.035em;
+      line-height: 1.1;
     }
 
-    p {
-      color: #555;
-      line-height: 1.5;
-    }
+    p { color: var(--muted); line-height: 1.55; }
 
     .progress {
-      font-size: 14px;
-      color: #777;
-      margin-bottom: 20px;
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--navy-2);
+      background: #e9f7f2;
+      padding: 7px 10px;
+      border-radius: 999px;
+      margin-bottom: 18px;
     }
 
-    input,
-    select {
+    input, select {
       width: 100%;
       padding: 16px;
       margin-top: 12px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
       font-size: 16px;
-      background: white;
+      color: var(--navy);
+      background: var(--white);
+      outline: none;
+      transition: border .2s, box-shadow .2s;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--mint-dark);
+      box-shadow: 0 0 0 4px rgba(87,189,160,.12);
     }
 
     button {
@@ -71,65 +168,116 @@
       padding: 16px;
       margin-top: 16px;
       border: 0;
-      border-radius: 10px;
-      background: #111;
+      border-radius: 12px;
+      background: var(--navy);
       color: white;
-      font-size: 17px;
+      font-size: 16px;
+      font-weight: 800;
       cursor: pointer;
+      transition: transform .15s, opacity .15s;
     }
 
-    button:hover {
-      opacity: 0.9;
-    }
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: .55; cursor: wait; transform: none; }
 
-    .secondary {
-      background: #eee;
-      color: #111;
-    }
+    .secondary { background: #edf1f0; color: var(--navy); }
 
-    #step2,
-    #step3 {
-      display: none;
-    }
+    #step2, #step3 { display: none; }
 
-    .address-box {
-      background: #f3f3f3;
+    .address-box, .result-meta {
+      background: #f0f5f3;
       padding: 14px;
-      border-radius: 10px;
+      border-radius: 12px;
       margin: 15px 0;
-      font-weight: bold;
+      font-weight: 650;
     }
 
-    .success {
-      text-align: center;
-      padding: 20px 0;
+    #addressSuggestions {
+      position: relative;
+      z-index: 5;
+      max-height: 230px;
+      overflow-y: auto;
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(11,31,42,.10);
     }
 
-    .result-meta {
-      background: #f3f3f3;
-      padding: 14px;
-      border-radius: 10px;
-      margin-top: 16px;
+    #addressSuggestions > div {
+      padding: 12px 14px;
+      background: white;
+      border-bottom: 1px solid #edf1f0;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    #addressSuggestions > div:hover { background: #eff8f5; }
+
+    .success { text-align: center; padding: 10px 0; }
+
+    #valuationResult {
+      font-size: clamp(32px, 5vw, 46px);
+      color: var(--navy);
+      margin: 22px 0 8px;
+      letter-spacing: -.045em;
     }
 
     .error-message {
-      color: #8a1c1c;
+      color: var(--danger);
       background: #fff0f0;
       padding: 14px;
       border-radius: 10px;
       margin-top: 16px;
     }
 
-    button:disabled {
-      opacity: .55;
-      cursor: wait;
+    .privacy-note {
+      font-size: 12px;
+      color: #7c888e;
+      margin: 12px 2px 0;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+        padding-top: 100px;
+        gap: 36px;
+      }
+      .hero-copy { text-align: center; margin: auto; }
+      .hero-copy p { margin-left: auto; margin-right: auto; }
+      .benefits { justify-content: center; }
+      .trust { display: none; }
+    }
+
+    @media (max-width: 560px) {
+      .topbar { padding: 20px; }
+      .hero { padding: 92px 16px 28px; }
+      .hero-copy h1 { font-size: 43px; }
+      .hero-copy p { font-size: 16px; }
+      .card { padding: 24px 20px; border-radius: 22px; }
     }
   </style>
 </head>
 
 <body>
+  <header class="topbar">
+    <div class="brand">PACIK.LV</div>
+    <div class="trust">Dati balstīti reālos nekustamā īpašuma darījumos</div>
+  </header>
 
-  <div class="hero">
+  <main class="hero">
+    <section class="hero-copy">
+      <div class="eyebrow">Ātrs īpašuma cenas aprēķins</div>
+      <h1>Uzzini, par cik vari pārdot savu īpašumu.</h1>
+      <p>
+        Saņem orientējošu tirgus vērtību, salīdzinot tavu īpašumu ar reāliem
+        nekustamā īpašuma darījumiem Rīgā.
+      </p>
+      <div class="benefits">
+        <span>Bez maksas</span>
+        <span>Dažu mirkļu laikā</span>
+        <span>Balstīts datos</span>
+      </div>
+    </section>
+
     <div class="card">
 
       <!-- 1. SOLIS -->
@@ -139,15 +287,14 @@
           1. solis no 2
         </div>
 
-        <h1>PACIK.LV</h1>
+        
 
         <h2>
-          Uzzini sava īpašuma aptuveno vērtību
+          Sāc ar īpašuma adresi
         </h2>
 
         <p>
-          Ievadi īpašuma adresi un sper pirmo soli,
-          lai noskaidrotu, par cik vari pārdot savu īpašumu.
+          Ievadi adresi. Nākamajā solī pajautāsim dažas detaļas, lai aprēķins būtu precīzāks.
         </p>
 
         <input
@@ -170,7 +317,7 @@
           2. solis no 2
         </div>
 
-        <h1>PACIK.LV</h1>
+        
 
         <h2>
           Pastāsti nedaudz par īpašumu
@@ -246,6 +393,9 @@
         <button onclick="submitForm()">
           Uzzināt vērtību
         </button>
+        <p class="privacy-note">
+          Iesniedzot informāciju, tu piekrīti, ka PACIK.LV to izmanto īpašuma vērtējuma sagatavošanai un saziņai par tavu pieprasījumu.
+        </p>
 
         <button
           class="secondary"
@@ -259,7 +409,7 @@
       <!-- APSTIPRINĀJUMS -->
       <div id="step3" class="success">
 
-        <h1>PACIK.LV</h1>
+        
 
         <h2>Tava īpašuma aptuvenā tirgus vērtība</h2>
 
@@ -281,7 +431,7 @@
       </div>
 
     </div>
-  </div>
+  </main>
 
 
   <script>
