@@ -6,7 +6,7 @@ from datetime import datetime, date
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Query, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import storage
 
@@ -165,6 +165,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.get("/pacik-riga-hero.jpg", include_in_schema=False)
+def pacik_riga_hero():
+    return FileResponse("/app/pacik-riga-hero.jpg", media_type="image/jpeg")
 
 # --------------------------------------------------
 # HOME
