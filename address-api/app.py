@@ -975,3 +975,58 @@ def building_db_columns():
 
     finally:
         con.close()
+@app.get("/building-material-stats")
+def building_material_stats():
+    con = sqlite3.connect(BUILDINGS_DB_PATH)
+
+    try:
+        total = con.execute(
+            "SELECT COUNT(*) FROM buildings"
+        ).fetchone()[0]
+
+        with_material = con.execute(
+            """
+            SELECT COUNT(*)
+            FROM buildings
+            WHERE material IS NOT NULL
+              AND TRIM(material) != ''
+            """
+        ).fetchone()[0]
+
+        samples = con.execute(
+            """
+            SELECT
+                varis_code,
+                cadastre_nr,
+                building_name,
+                exploit_year,
+                material
+            FROM buildings
+            WHERE material IS NOT NULL
+              AND TRIM(material) != ''
+            LIMIT 20
+            """
+        ).fetchall()
+
+        return {
+            "total_buildings": total,
+            "buildings_with_material": with_material,
+            "buildings_without_material": total - with_material,
+            "material_percent": round(
+                with_material / total * 100, 2
+            ) if total else 0,
+            "samples": [
+                {
+                    "varis_code": row[0],
+                    "cadastre_nr": row[1],
+                    "building_name": row[2],
+                    "exploit_year": row[3],
+                    "material": row[4]
+                }
+                for row in samples
+            ]
+        }
+
+    finally:
+        con.close()
+
