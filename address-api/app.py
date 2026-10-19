@@ -501,13 +501,26 @@ def building_info(
 def valuation(
     q: str = Query(min_length=3),
     area: float = Query(gt=0),
-    city: str = Query(min_length=2)
+    city: str = Query(min_length=2),
+    property_type: str = Query(default="Dzīvoklis")
 ):
     if not transactions:
         raise HTTPException(
             status_code=503,
             detail="Darījumu dati nav ielādēti"
         )
+
+    # Pašreizējais modelis ir trenēts/veidots no dzīvokļu darījumu laukiem.
+    # Neļaujam māju, zemes vai komercīpašumu ievadi kļūdaini novērtēt kā dzīvokli.
+    if property_type.casefold().strip() not in {"dzīvoklis", "dzivoklis", "apartment"}:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "unsupported_property_type",
+                "message": "Automātiskais modelis šobrīd droši atbalsta dzīvokļus."
+            }
+        )
+
     # Atrodam ēku pēc ievadītās adreses
     target_building = None
     target_varis_code = ""
@@ -1052,10 +1065,14 @@ def valuation(
         + nearby_comparables
     )
 
-    if not comparable:
+    if len(comparable) < 3:
         raise HTTPException(
             status_code=404,
-            detail="Nav atrasti piemēroti salīdzināmie darījumi"
+            detail={
+                "code": "insufficient_comparables",
+                "message": "Drošam automātiskam vērtējumam nav vismaz 3 piemērotu salīdzināmo darījumu.",
+                "comparable_count": len(comparable)
+            }
         )
 
     # --------------------------------------------------
@@ -1197,7 +1214,7 @@ def valuation(
         "area": area,
         "target_building": target_building,
         "target_varis_code": target_varis_code or None,
-        "selection_method": "hierarchical_geo_recency_v4_fast",
+        "selection_method": "hierarchical_geo_recency_v5_safe",
         "comparable_count": comparable_count,
         "building_comparable_count": building_count,
         "street_comparable_count": street_count,
