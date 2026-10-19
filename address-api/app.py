@@ -960,6 +960,51 @@ def valuation(
         ),
         "comparables": comparable[:10]
     }
+@app.get("/address-debug")
+def address_debug(
+    q: str = Query(min_length=3)
+):
+    """Diagnostic endpoint for address -> VZD building linkage."""
+    if not addresses:
+        raise HTTPException(
+            status_code=503,
+            detail="Adrešu dati nav ielādēti"
+        )
+
+    query = q.casefold().strip().rstrip(",")
+    matches = []
+
+    for row in addresses:
+        address = (row.get("STD", "") or "").strip()
+        normalized = address.casefold()
+
+        without_postcode = normalized
+        if ", lv-" in without_postcode:
+            without_postcode = without_postcode.split(", lv-")[0]
+
+        if normalized == query or without_postcode == query:
+            varis_code = (row.get("KODS", "") or "").strip()
+            matches.append({
+                "address": address,
+                "object_code": varis_code,
+                "address_type": row.get("TIPS_CD", ""),
+                "parent_code": row.get("VKUR_CD", ""),
+                "parent_type": row.get("VKUR_TIPS", ""),
+                "name": row.get("NOSAUKUMS", ""),
+                "attributes": row.get("ATRIB", ""),
+                "building": (
+                    get_building_by_varis_code(varis_code)
+                    if varis_code else None
+                ),
+            })
+
+    return {
+        "query": q,
+        "match_count": len(matches),
+        "matches": matches,
+    }
+
+
 @app.get("/building-by-code")
 def building_by_code(
     varis_code: str = Query(min_length=1)
