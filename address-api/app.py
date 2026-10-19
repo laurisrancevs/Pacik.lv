@@ -6,7 +6,7 @@ from datetime import datetime, date
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Query, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import storage
 
@@ -187,9 +187,14 @@ def get_building_by_varis_code(varis_code: str):
         con.close()
 
 
-@app.get("/", include_in_schema=False)
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
 def home():
-    return FileResponse("/app/index.html", media_type="text/html")
+    try:
+        with open("/app/index.html", "r", encoding="utf-8") as page:
+            return HTMLResponse(content=page.read(), status_code=200)
+    except Exception:
+        logger.exception("PACIK frontend index.html could not be served")
+        raise HTTPException(status_code=503, detail="PACIK.LV frontend is temporarily unavailable")
 
 @app.get("/api")
 def api_status():
