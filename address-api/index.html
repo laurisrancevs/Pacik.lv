@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PACIK.LV — Uzzini, par cik vari pārdot savu īpašumu</title>
+<style>
+:root{--navy:#071b2c;--teal:#45d7c2;--teal2:#13ad9d;--ink:#081426;--muted:#687386;--soft:#effbf8;--white:#fff}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:#fff}
+.hero{min-height:740px;position:relative;color:#fff;background:linear-gradient(90deg,rgba(3,17,31,.91) 0%,rgba(3,17,31,.66) 48%,rgba(3,17,31,.22) 100%),linear-gradient(180deg,rgba(3,17,31,.08),rgba(3,17,31,.38)),url('https://images.unsplash.com/photo-1606131731446-5568d87113aa?auto=format&fit=crop&w=2200&q=88') center/cover no-repeat}
+.nav{max-width:1200px;margin:auto;padding:22px 28px;display:flex;align-items:center;gap:42px}.logo{font-size:27px;font-weight:900;letter-spacing:.05em;white-space:nowrap}.logo b{color:var(--teal)}.logo small{display:block;font-size:8px;letter-spacing:.18em;margin-top:3px}.links{display:flex;gap:36px;margin:auto}.links a{color:#fff;text-decoration:none;font-size:14px;font-weight:650}.outline{border:1px solid rgba(255,255,255,.8);border-radius:999px;padding:12px 22px;color:#fff;text-decoration:none;font-weight:700;font-size:13px}
+.hero-inner{max-width:1200px;margin:auto;padding:75px 28px 90px}.hero-content{max-width:700px}.pill{display:inline-flex;gap:9px;align-items:center;border:1px solid rgba(69,215,194,.55);border-radius:999px;padding:9px 15px;color:#eef;font-size:13px;background:rgba(6,30,43,.32)}.pill b{color:var(--teal)}
+.hero h1{font-size:58px;line-height:1.02;letter-spacing:-.045em;margin:25px 0 14px;max-width:760px}.accent{color:var(--teal)}.lead{font-size:23px;line-height:1.35;margin:0 0 30px;max-width:610px}.mini-benefits{display:flex;gap:28px;margin:28px 0}.mini{display:flex;gap:11px;align-items:center}.ico{width:44px;height:44px;border-radius:50%;background:rgba(18,191,168,.18);display:grid;place-items:center;color:var(--teal);font-size:22px}.mini strong{display:block;font-size:13px}.mini span{font-size:11px;color:#dbe5ea}
+.searchbar{max-width:680px;background:#fff;padding:8px;border-radius:14px;display:flex;box-shadow:0 18px 45px rgba(0,0,0,.22);position:relative}.searchbar input{flex:1;border:0;outline:0;padding:15px 16px;font-size:15px;min-width:0}.searchbar button{border:0;background:linear-gradient(135deg,var(--teal2),#37c9b8);color:#fff;border-radius:10px;padding:0 30px;font-weight:800;font-size:15px;cursor:pointer}.hint{font-size:12px;font-style:italic;margin:14px 0 0 120px;color:#fff}
+#addressSuggestions{position:absolute;left:8px;right:205px;top:64px;z-index:20;max-height:240px;overflow:auto;border-radius:10px;box-shadow:0 12px 35px rgba(0,0,0,.18)}#addressSuggestions>div{background:#fff;color:var(--ink);padding:12px 15px;border-bottom:1px solid #edf0f2;cursor:pointer;font-size:14px}#addressSuggestions>div:hover{background:#effbf8}
+.section{padding:55px 28px}.wrap{max-width:1120px;margin:auto}.section h2{text-align:center;font-size:31px;letter-spacing:-.03em;margin:0 0 36px}.section h2 b{color:var(--teal2)}
+.features{display:grid;grid-template-columns:repeat(4,1fr);gap:30px;text-align:center}.feature .round{width:68px;height:68px;margin:0 auto 14px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-size:28px}.feature h3{font-size:16px;margin:0 0 7px}.feature p{font-size:13px;line-height:1.5;color:var(--muted);margin:0}
+.consult{margin-top:38px;background:linear-gradient(90deg,#e9fbf7,#f6fffd);border-radius:13px;padding:20px 28px;display:flex;align-items:center;gap:18px}.consult .copy{flex:1}.consult strong{display:block;margin-bottom:5px}.consult span{font-size:13px;color:var(--muted)}.consult a{border:1px solid var(--ink);border-radius:12px;padding:13px 22px;text-decoration:none;color:var(--ink);font-weight:750;font-size:13px}
+.how{background:#fbfcfc}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}.step{padding:26px;border:1px solid #e8eeee;border-radius:18px;background:#fff}.step-num{color:var(--teal2);font-weight:900;font-size:13px}.step h3{margin:9px 0}.step p{color:var(--muted);font-size:14px;line-height:1.55}
+.form-shell{max-width:720px;margin:0 auto;background:#fff;border-radius:22px;padding:34px;box-shadow:0 20px 60px rgba(6,30,43,.14);color:var(--ink)}#step2,#step3{display:none}.progress{font-size:12px;color:var(--teal2);font-weight:800;margin-bottom:10px}.form-shell h2{text-align:left;margin:0 0 10px}.form-shell p{color:var(--muted)}.address-box,.result-meta{background:#f1f7f5;padding:13px;border-radius:10px;margin:12px 0;font-weight:650}.form-shell input,.form-shell select{width:100%;padding:14px;margin-top:11px;border:1px solid #d9e2e1;border-radius:10px;font-size:15px;background:#fff}.form-shell button{width:100%;border:0;border-radius:10px;padding:15px;margin-top:14px;background:var(--navy);color:#fff;font-weight:800;font-size:15px;cursor:pointer}.form-shell .secondary{background:#eef2f2;color:var(--ink)}.privacy-note{font-size:11px}.success{text-align:center}.success h1{font-size:40px}.error-message{background:#fff1f1;color:#8a1c1c;padding:13px;border-radius:10px}
+.faq{max-width:800px;margin:auto}.faq details{border-bottom:1px solid #e6ebeb;padding:18px 0}.faq summary{font-weight:750;cursor:pointer}.faq p{color:var(--muted);font-size:14px}
+footer{background:var(--navy);color:#d8e2e7;padding:36px 28px;text-align:center;font-size:12px}
+@media(max-width:800px){.links{display:none}.nav{justify-content:space-between}.hero{min-height:auto}.hero-inner{padding-top:55px}.hero h1{font-size:43px}.lead{font-size:19px}.mini-benefits{flex-direction:column;gap:12px}.searchbar{display:block}.searchbar button{width:100%;padding:14px}.hint{margin-left:0}.features,.steps{grid-template-columns:1fr 1fr}.consult{align-items:flex-start;flex-direction:column}#addressSuggestions{right:8px;top:58px}}
+@media(max-width:520px){.outline{display:none}.hero h1{font-size:38px}.features,.steps{grid-template-columns:1fr}.section{padding:44px 18px}.hero-inner,.nav{padding-left:18px;padding-right:18px}.form-shell{padding:24px 18px}}
+</style>
+</head>
+<body>
+<section class="hero" id="sakums">
+<nav class="nav"><div class="logo">PACIK<b>.LV</b><small>TAVA ĪPAŠUMA VĒRTĪBA</small></div><div class="links"><a href="#ka-tas-strada">Kā tas strādā?</a><a href="#kapec">Kāpēc mēs?</a><a href="#faq">Biežākie jautājumi</a><a href="#kontakti">Kontakti</a></div><a class="outline" href="#vertesana">Piesakies konsultācijai</a></nav>
+<div class="hero-inner"><div class="hero-content">
+<div class="pill">⌂ <b>Ātri</b> • Bezmaksas • Uzticami</div>
+<h1>Uzzini, <span class="accent">par cik</span><br>vari pārdot savu īpašumu.</h1>
+<p class="lead">Saņem <span class="accent">bezmaksas</span> aptuveno tirgus vērtējumu dažu minūšu laikā.</p>
+<div class="mini-benefits"><div class="mini"><div class="ico">⚡</div><div><strong>Ātri</strong><span>Rezultāts dažu mirkļu laikā</span></div></div><div class="mini"><div class="ico">▥</div><div><strong>Balstīts tirgus datos</strong><span>Aktuālākie darījumi Latvijā</span></div></div><div class="mini"><div class="ico">♢</div><div><strong>Bezmaksas</strong><span>Bez saistībām</span></div></div></div>
+<div id="step1"><div class="searchbar"><input id="address" type="text" placeholder="Ievadi adresi (piem. Brīvības iela 123, Rīga)"><button onclick="nextStep()">Uzzināt vērtību →</button><div id="addressSuggestions"></div></div><div class="hint">Sāc ar adresi — tas aizņem tikai 30 sekundes!</div></div>
+</div></div></section>
+
+<section class="section" id="kapec"><div class="wrap"><h2>Kāpēc izmantot PACIK<b>.LV</b>?</h2><div class="features">
+<div class="feature"><div class="round">⌂</div><h3>Reāls tirgus novērtējums</h3><p>Balstīts uz aktuāliem darījumiem un reāliem tirgus datiem.</p></div>
+<div class="feature"><div class="round">◷</div><h3>Dažu minūšu laikā</h3><p>Ātri un vienkārši — bez liekas birokrātijas.</p></div>
+<div class="feature"><div class="round">♢</div><h3>Pilnīgi bez maksas</h3><p>Saņem rezultātu bez saistībām.</p></div>
+<div class="feature"><div class="round">♙</div><h3>Profesionāla atbalsta komanda</h3><p>Ja vēlies, mūsu speciālists sazināsies ar tevi.</p></div></div>
+<div class="consult"><div class="ico">☏</div><div class="copy"><strong>Vēlies precīzāku vērtējumu?</strong><span>Piesakies bezmaksas konsultācijai ar mūsu nekustamo īpašumu speciālistu.</span></div><a href="#vertesana">Piesakies konsultācijai →</a></div></div></section>
+
+<section class="section how" id="ka-tas-strada"><div class="wrap"><h2>Kā tas strādā?</h2><div class="steps"><div class="step"><div class="step-num">01</div><h3>Ievadi adresi</h3><p>Atrodam ēku un tās tehniskos datus VZD datos.</p></div><div class="step"><div class="step-num">02</div><h3>Pastāsti par īpašumu</h3><p>Norādi platību, stāvokli un dažas detaļas par īpašumu.</p></div><div class="step"><div class="step-num">03</div><h3>Saņem vērtējumu</h3><p>Salīdzinām ar līdzīgiem reāliem darījumiem un parādām orientējošu tirgus vērtību.</p></div></div></div></section>
+
+<section class="section" id="vertesana"><div class="form-shell">
+<div id="step2"><div class="progress">2. solis no 2</div><h2>Pastāsti nedaudz par īpašumu</h2><p>Adrese:</p><div id="selectedAddress" class="address-box"></div>
+<select id="propertyType"><option value="">Īpašuma tips</option><option value="Dzīvoklis">Dzīvoklis</option><option value="Privātmāja">Privātmāja</option><option value="Zeme">Zeme</option><option value="Komercīpašums">Komercīpašums</option><option value="Cits">Cits</option></select>
+<input id="area" type="number" min="1" placeholder="Platība m²"><select id="condition"><option value="">Īpašuma stāvoklis</option><option value="Jauns / renovēts">Jauns / renovēts</option><option value="Labs">Labs</option><option value="Vidējs">Vidējs</option><option value="Nepieciešams remonts">Nepieciešams remonts</option></select>
+<input id="phone" type="tel" placeholder="Tālruņa numurs *"><input id="name" type="text" placeholder="Vārds (nav obligāti)"><input id="email" type="email" placeholder="E-pasts (nav obligāti)">
+<select id="sellingTime"><option value="">Kad apsver īpašuma pārdošanu?</option><option value="Tikai interesējos">Tikai interesējos</option><option value="Apsveru pārdošanu (3–6 mēn.)">Apsveru pārdošanu (3–6 mēn.)</option><option value="Vēlos pārdot tuvākajā laikā">Vēlos pārdot tuvākajā laikā</option></select>
+<button onclick="submitForm()">Uzzināt vērtību</button><p class="privacy-note">Iesniedzot informāciju, tu piekrīti, ka PACIK.LV to izmanto vērtējuma sagatavošanai un saziņai par tavu pieprasījumu.</p><button class="secondary" onclick="backStep()">Atpakaļ</button></div>
+<div id="step3" class="success"><h2>Tava īpašuma aptuvenā tirgus vērtība</h2><h1 id="valuationResult">Aprēķinām...</h1><p id="valuationInfo">Vērtējums balstīts uz salīdzināmiem nekustamā īpašuma darījumiem.</p><div id="valuationMeta" class="result-meta" style="display:none"></div><p id="valuationError" class="error-message" style="display:none"></p><button id="consultationButton" style="display:none" onclick="requestConsultation()">Vēlos konsultāciju par pārdošanu</button></div>
+</div></section>
+
+<section class="section how" id="faq"><div class="wrap"><h2>Biežākie jautājumi</h2><div class="faq"><details><summary>Vai vērtējums ir bez maksas?</summary><p>Jā. Automātiskais PACIK.LV orientējošais vērtējums ir bez maksas un bez saistībām.</p></details><details><summary>Vai tas ir sertificēts vērtējums?</summary><p>Nē. Tas ir automatizēts orientējošs tirgus aprēķins. Vajadzības gadījumā vari pieteikt individuālu konsultāciju.</p></details><details><summary>Uz kādiem datiem balstās aprēķins?</summary><p>Aprēķins izmanto īpašuma un ēkas datus un salīdzina tos ar līdzīgiem nekustamā īpašuma darījumiem.</p></details></div></div></section>
+<footer id="kontakti"><strong>PACIK.LV</strong><br><br>Uzzini sava īpašuma orientējošo tirgus vērtību.</footer>
+<script>
+const addressInput = document.getElementById("address");
+const addressSuggestions = document.getElementById("addressSuggestions");
+
+addressInput.addEventListener("input", async function () {
+    const query = this.value.trim();
+
+    if (query.length < 3) {
+        addressSuggestions.innerHTML = "";
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            "https://pacik-address-api-581028202745.europe-west1.run.app/search?q=" +
+            encodeURIComponent(query)
+        );
+
+        const data = await response.json();
+
+        addressSuggestions.innerHTML = "";
+
+        data.results.forEach(item => {
+            const div = document.createElement("div");
+            div.textContent = item.address;
+
+            div.onclick = function () {
+                addressInput.value = item.address;
+                addressSuggestions.innerHTML = "";
+            };
+
+            addressSuggestions.appendChild(div);
+        });
+
+    } catch (error) {
+        console.error("Adrešu meklēšanas kļūda:", error);
+    }
+});
+    function nextStep() {
+
+      const address =
+        document.getElementById("address").value.trim();
+
+      if (!address) {
+        alert("Lūdzu, ievadi īpašuma adresi.");
+        return;
+      }
+
+      document.getElementById("selectedAddress").textContent =
+        address;
+
+      document.getElementById("step1").style.display = "none";
+
+      document.getElementById("step2").style.display =
+        "block";
+    }
+
+
+    function backStep() {
+
+      document.getElementById("step2").style.display =
+        "none";
+
+      document.getElementById("step1").style.display = "block";
+    }
+
+
+ async function submitForm() {
+    const address = document.getElementById("address").value.trim();
+
+      const propertyType =
+        document.getElementById("propertyType").value;
+
+      const area =
+        document.getElementById("area").value;
+
+      const condition =
+        document.getElementById("condition").value;
+
+      const phone =
+        document.getElementById("phone").value.trim();
+
+      const sellingTime =
+        document.getElementById("sellingTime").value;
+
+      const name =
+        document.getElementById("name").value.trim();
+
+      const email =
+        document.getElementById("email").value.trim();
+
+
+      if (!propertyType) {
+        alert("Lūdzu, izvēlies īpašuma tipu.");
+        return;
+      }
+
+      if (!area) {
+        alert("Lūdzu, ievadi īpašuma platību.");
+        return;
+      }
+
+      if (!condition) {
+        alert("Lūdzu, izvēlies īpašuma stāvokli.");
+        return;
+      }
+
+      if (!phone) {
+        alert("Lūdzu, ievadi tālruņa numuru.");
+        return;
+      }
+
+      if (!sellingTime) {
+        alert("Lūdzu, izvēlies, kad apsver īpašuma pārdošanu.");
+        return;
+      }
+
+
+try {
+  if (typeof window.savePacikSubmission !== "function") {
+    throw new Error("Firebase savienojums nav gatavs.");
+  }
+
+  await window.savePacikSubmission({
+    address: address,
+    propertyType: propertyType,
+    area: Number(area),
+    condition: condition,
+    phone: phone,
+    sellingTime: sellingTime,
+    name: name || null,
+    email: email || null
+  });
+
+} catch (error) {
+  console.error("Saglabāšanas kļūda:", error);
+  alert("Neizdevās saglabāt pieteikumu. Lūdzu, mēģini vēlreiz.");
+  return;
+}
+document.getElementById("step2").style.display = "none";
+document.getElementById("step3").style.display = "block";
+document.getElementById("valuationResult").textContent = "Aprēķinām...";
+document.getElementById("valuationInfo").textContent =
+    "Salīdzinām īpašumu ar reāliem nekustamā īpašuma darījumiem.";
+document.getElementById("valuationMeta").style.display = "none";
+document.getElementById("valuationError").style.display = "none";
+document.getElementById("consultationButton").style.display = "none";
+
+try {
+    const city = "Rīga";
+
+    const addressForValuation = address
+        .replace(/,\\s*Rīga,\\s*LV-\\d{4}$/i, "")
+        .replace(/,\\s*LV-\\d{4}$/i, "")
+        .split(",")[0]
+        .trim();
+
+    const valuationUrl =
+        "https://pacik-address-api-581028202745.europe-west1.run.app/valuation" +
+        "?q=" + encodeURIComponent(addressForValuation) +
+        "&area=" + encodeURIComponent(area) +
+        "&city=" + encodeURIComponent(city);
+
+    const valuationResponse = await fetch(valuationUrl);
+    const valuation = await valuationResponse.json();
+
+    if (!valuationResponse.ok) {
+        const detail = valuation && valuation.detail;
+        const message =
+            detail && detail.code === "building_type_mismatch"
+                ? "Šim īpašuma tipam automātisku dzīvokļa vērtējumu šobrīd nevaram droši aprēķināt."
+                : "Šobrīd šai adresei automātisku vērtējumu nevaram droši aprēķināt.";
+        throw new Error(message);
+    }
+
+    window.pacikValuation = valuation;
+
+    document.getElementById("valuationResult").textContent =
+        Number(valuation.estimated_min).toLocaleString("lv-LV") +
+        " € – " +
+        Number(valuation.estimated_max).toLocaleString("lv-LV") +
+        " €";
+
+    document.getElementById("valuationInfo").textContent =
+        "Aprēķins balstīts uz " +
+        valuation.comparable_count +
+        " salīdzināmiem nekustamā īpašuma darījumiem.";
+
+    const confidenceLabels = {
+        high: "augsta",
+        medium: "vidēja",
+        low: "ierobežota"
+    };
+    const confidence =
+        valuation.confidence &&
+        (valuation.confidence.level || valuation.confidence);
+
+    document.getElementById("valuationMeta").textContent =
+        "Aprēķina pārliecība: " +
+        (confidenceLabels[confidence] || "informatīva") +
+        ". Šis ir automātisks orientējošs tirgus aprēķins, nevis sertificēts vērtējums.";
+    document.getElementById("valuationMeta").style.display = "block";
+    document.getElementById("consultationButton").style.display = "block";
+
+} catch (error) {
+    console.error("Vērtēšanas kļūda:", error);
+    document.getElementById("valuationResult").textContent =
+        "Nepieciešama individuāla pārbaude";
+    document.getElementById("valuationInfo").textContent =
+        "Tavs pieteikums ir saņemts.";
+    document.getElementById("valuationError").textContent =
+        error.message || "Vērtējumu neizdevās aprēķināt.";
+    document.getElementById("valuationError").style.display = "block";
+    document.getElementById("consultationButton").style.display = "block";
+}
+    }
+
+    function requestConsultation() {
+      const phone = document.getElementById("phone").value.trim();
+      const sellingTime = document.getElementById("sellingTime").value;
+
+      alert(
+        "Paldies! Tavs tālruņa numurs " + phone +
+        " ir saglabāts. Sazināsimies par īpašuma pārdošanas iespējām." +
+        (sellingTime ? "\\n\\nNorādītais plāns: " + sellingTime : "")
+      );
+    }
+
+  </script>
+
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+   apiKey: "AIzaSyA4fnm5B6ig6m5z3InVVltsKmuMFtxyO_s",
+    authDomain: "pacik-lv.firebaseapp.com",
+    projectId: "pacik-lv",
+    storageBucket: "pacik-lv.firebasestorage.app",
+    messagingSenderId: "581028202745",
+    appId: "1:581028202745:web:33a5a2aec1bcf8622cfa28"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.savePacikSubmission = async function(data) {
+    const docRef = await addDoc(collection(db, "submissions"), {
+      ...data,
+      createdAt: serverTimestamp(),
+      source: "PACIK.LV"
+    });
+    return docRef.id;
+  };
+</script>
+
+  
+
+</body>
+</html>
