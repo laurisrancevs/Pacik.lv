@@ -29,10 +29,10 @@ jobs:
           cases = [
               {
                   "name": "Purvciema 20",
-                  "params": {"q": "Purvciema iela 20", "area": "50", "city": "Rīga"},
+                  "params": {"q": "Purvciema iela 20", "area": "50", "city": "Rīga", "property_type": "Dzīvoklis"},
                   "status": 200,
                   "check": lambda d: (
-                      d.get("selection_method") == "hierarchical_geo_recency_v4_fast"
+                      d.get("selection_method") == "hierarchical_geo_recency_v6_progressive"
                       and d.get("estimated_value", 0) > 0
                       and d.get("comparable_count", 0) > 0
                       and bool(d.get("target_coordinates"))
@@ -40,7 +40,7 @@ jobs:
               },
               {
                   "name": "Raņķa dambis 5",
-                  "params": {"q": "Raņķa dambis 5", "area": "60", "city": "Rīga"},
+                  "params": {"q": "Raņķa dambis 5", "area": "60", "city": "Rīga", "property_type": "Dzīvoklis"},
                   "status": 200,
                   "check": lambda d: (
                       d.get("estimated_value", 0) > 0
@@ -49,7 +49,7 @@ jobs:
               },
               {
                   "name": "Purvciema 38 guard",
-                  "params": {"q": "Purvciema iela 38", "area": "50", "city": "Rīga"},
+                  "params": {"q": "Purvciema iela 38", "area": "50", "city": "Rīga", "property_type": "Dzīvoklis"},
                   "status": 422,
                   "check": lambda d: (
                       isinstance(d.get("detail"), dict)
@@ -57,6 +57,17 @@ jobs:
                   ),
               },
           ]
+
+          cases.insert(2, {
+              "name": "Alūksnes 5 progressive",
+              "params": {"q": "Alūksnes iela 5", "area": "90", "city": "Rīga", "property_type": "Dzīvoklis"},
+              "status": 200,
+              "check": lambda d: (
+                  d.get("selection_method") == "hierarchical_geo_recency_v6_progressive"
+                  and d.get("estimated_value", 0) > 0
+                  and d.get("comparable_count", 0) >= 3
+              ),
+          })
 
           failures = []
           for case in cases:
