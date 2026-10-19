@@ -32,7 +32,7 @@ jobs:
                   "params": {"q": "Purvciema iela 20", "area": "50", "city": "Rīga", "property_type": "Dzīvoklis"},
                   "status": 200,
                   "check": lambda d: (
-                      d.get("selection_method") == "hierarchical_geo_recency_v10_cadastre_enriched"
+                      d.get("selection_method") == "hierarchical_geo_recency_v11_cadastre_evidence"
                       and d.get("estimated_value", 0) > 0
                       and d.get("comparable_count", 0) > 0
                       and bool(d.get("target_coordinates"))
@@ -63,7 +63,7 @@ jobs:
               "params": {"q": "Alūksnes iela 5", "area": "90", "city": "Rīga", "property_type": "Dzīvoklis"},
               "status": 200,
               "check": lambda d: (
-                  d.get("selection_method") == "hierarchical_geo_recency_v10_cadastre_enriched"
+                  d.get("selection_method") == "hierarchical_geo_recency_v11_cadastre_evidence"
                   and d.get("estimated_value", 0) > 0
                   and d.get("comparable_count", 0) >= 3
               ),
