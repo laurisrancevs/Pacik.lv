@@ -104,6 +104,26 @@
       text-align: center;
       padding: 20px 0;
     }
+
+    .result-meta {
+      background: #f3f3f3;
+      padding: 14px;
+      border-radius: 10px;
+      margin-top: 16px;
+    }
+
+    .error-message {
+      color: #8a1c1c;
+      background: #fff0f0;
+      padding: 14px;
+      border-radius: 10px;
+      margin-top: 16px;
+    }
+
+    button:disabled {
+      opacity: .55;
+      cursor: wait;
+    }
   </style>
 </head>
 
@@ -251,6 +271,13 @@
     Vērtējums balstīts uz salīdzināmiem nekustamā īpašuma darījumiem.
 </p>
 
+<div id="valuationMeta" class="result-meta" style="display:none"></div>
+<p id="valuationError" class="error-message" style="display:none"></p>
+
+<button id="consultationButton" style="display:none" onclick="requestConsultation()">
+  Vēlos konsultāciju par pārdošanu
+</button>
+
       </div>
 
     </div>
@@ -344,6 +371,12 @@ addressInput.addEventListener("input", async function () {
       const sellingTime =
         document.getElementById("sellingTime").value;
 
+      const name =
+        document.getElementById("name").value.trim();
+
+      const email =
+        document.getElementById("email").value.trim();
+
 
       if (!propertyType) {
         alert("Lūdzu, izvēlies īpašuma tipu.");
@@ -382,7 +415,9 @@ try {
     area: Number(area),
     condition: condition,
     phone: phone,
-    sellingTime: sellingTime
+    sellingTime: sellingTime,
+    name: name || null,
+    email: email || null
   });
 
 } catch (error) {
@@ -390,11 +425,21 @@ try {
   alert("Neizdevās saglabāt pieteikumu. Lūdzu, mēģini vēlreiz.");
   return;
 }
+document.getElementById("step2").style.display = "none";
+document.getElementById("step3").style.display = "block";
+document.getElementById("valuationResult").textContent = "Aprēķinām...";
+document.getElementById("valuationInfo").textContent =
+    "Salīdzinām īpašumu ar reāliem nekustamā īpašuma darījumiem.";
+document.getElementById("valuationMeta").style.display = "none";
+document.getElementById("valuationError").style.display = "none";
+document.getElementById("consultationButton").style.display = "none";
+
 try {
     const city = "Rīga";
 
     const addressForValuation = address
-        .replace(", Rīga, LV-", ",")
+        .replace(/,\\s*Rīga,\\s*LV-\\d{4}$/i, "")
+        .replace(/,\\s*LV-\\d{4}$/i, "")
         .split(",")[0]
         .trim();
 
@@ -405,34 +450,68 @@ try {
         "&city=" + encodeURIComponent(city);
 
     const valuationResponse = await fetch(valuationUrl);
-
-    if (!valuationResponse.ok) {
-        throw new Error("Vērtējumu neizdevās aprēķināt");
-    }
-
     const valuation = await valuationResponse.json();
 
-    console.log("PACIK vērtējums:", valuation);
+    if (!valuationResponse.ok) {
+        const detail = valuation && valuation.detail;
+        const message =
+            detail && detail.code === "building_type_mismatch"
+                ? "Šim īpašuma tipam automātisku dzīvokļa vērtējumu šobrīd nevaram droši aprēķināt."
+                : "Šobrīd šai adresei automātisku vērtējumu nevaram droši aprēķināt.";
+        throw new Error(message);
+    }
 
     window.pacikValuation = valuation;
-document.getElementById("valuationResult").textContent =
-    valuation.estimated_min.toLocaleString("lv-LV") +
-    " € – " +
-    valuation.estimated_max.toLocaleString("lv-LV") +
-    " €";
 
-document.getElementById("valuationInfo").textContent =
-    "Aprēķins balstīts uz " +
-    valuation.comparable_count +
-    " salīdzināmiem nekustamā īpašuma darījumiem.";
+    document.getElementById("valuationResult").textContent =
+        Number(valuation.estimated_min).toLocaleString("lv-LV") +
+        " € – " +
+        Number(valuation.estimated_max).toLocaleString("lv-LV") +
+        " €";
+
+    document.getElementById("valuationInfo").textContent =
+        "Aprēķins balstīts uz " +
+        valuation.comparable_count +
+        " salīdzināmiem nekustamā īpašuma darījumiem.";
+
+    const confidenceLabels = {
+        high: "augsta",
+        medium: "vidēja",
+        low: "ierobežota"
+    };
+    const confidence =
+        valuation.confidence &&
+        (valuation.confidence.level || valuation.confidence);
+
+    document.getElementById("valuationMeta").textContent =
+        "Aprēķina pārliecība: " +
+        (confidenceLabels[confidence] || "informatīva") +
+        ". Šis ir automātisks orientējošs tirgus aprēķins, nevis sertificēts vērtējums.";
+    document.getElementById("valuationMeta").style.display = "block";
+    document.getElementById("consultationButton").style.display = "block";
+
 } catch (error) {
     console.error("Vērtēšanas kļūda:", error);
+    document.getElementById("valuationResult").textContent =
+        "Nepieciešama individuāla pārbaude";
+    document.getElementById("valuationInfo").textContent =
+        "Tavs pieteikums ir saņemts.";
+    document.getElementById("valuationError").textContent =
+        error.message || "Vērtējumu neizdevās aprēķināt.";
+    document.getElementById("valuationError").style.display = "block";
+    document.getElementById("consultationButton").style.display = "block";
 }
-      document.getElementById("step2").style.display =
-        "none";
+    }
 
-      document.getElementById("step3").style.display =
-        "block";
+    function requestConsultation() {
+      const phone = document.getElementById("phone").value.trim();
+      const sellingTime = document.getElementById("sellingTime").value;
+
+      alert(
+        "Paldies! Tavs tālruņa numurs " + phone +
+        " ir saglabāts. Sazināsimies par īpašuma pārdošanas iespējām." +
+        (sellingTime ? "\\n\\nNorādītais plāns: " + sellingTime : "")
+      );
     }
 
   </script>
