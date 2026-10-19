@@ -838,6 +838,86 @@ def valuation(
         return round((dx * dx + dy * dy) ** 0.5)
 
     # --------------------------------------------------
+    # 4. TUVUMĀ ESOŠU LĪDZĪGU ĒKU DARĪJUMI
+    # --------------------------------------------------
+
+    nearby_comparables = []
+
+    def collect_nearby_comparables(max_distance_m):
+        if target_coordinates is None:
+            return
+
+        for row in transactions:
+            address = (
+                row.get("Adreses standartpieraksts_DTG", "")
+                or ""
+            )
+            address_normalized = address.casefold().strip()
+
+            if city_query not in address_normalized:
+                continue
+
+            item = make_comparable(row)
+            if item is None:
+                continue
+
+            distance_m = distance_to_target(address)
+            if distance_m is None or distance_m > max_distance_m:
+                continue
+
+            # Exact-building and same-street transactions already have a
+            # higher-priority tier and must not be duplicated here.
+            if is_duplicate(item, building_comparables):
+                continue
+            if is_duplicate(item, street_comparables):
+                continue
+            if is_duplicate(item, nearby_comparables):
+                continue
+
+            if target_building:
+                target_year_local = parse_number(
+                    target_building.get("exploit_year")
+                )
+                comparable_year = parse_number(
+                    item.get("building_year")
+                )
+
+                if target_year_local and comparable_year:
+                    if abs(target_year_local - comparable_year) > 10:
+                        continue
+
+                target_material = normalize_material(
+                    target_building.get("material", "")
+                )
+                comparable_material = normalize_material(
+                    item.get("building_material", "")
+                )
+                if target_material and comparable_material:
+                    if target_material != comparable_material:
+                        continue
+
+            item["distance_m"] = distance_m
+            item["selection_tier"] = (
+                "nearby_500m"
+                if max_distance_m <= 500
+                else "nearby_1000m"
+            )
+            nearby_comparables.append(item)
+
+    # Only widen geographically when the higher-quality same-building /
+    # same-street evidence is insufficient.
+    if len(building_comparables) + len(street_comparables) < 5:
+        collect_nearby_comparables(500)
+
+    if (
+        len(building_comparables)
+        + len(street_comparables)
+        + len(nearby_comparables)
+        < 5
+    ):
+        collect_nearby_comparables(1000)
+
+    # --------------------------------------------------
     # SAKĀRTOJAM PĒC LĪDZĪBAS
     # --------------------------------------------------
     # Darījumi konkrētajā mājā vienmēr paliek ar augstāko prioritāti.
@@ -884,11 +964,24 @@ def valuation(
     for item in street_comparables:
         item["similarity_score"] = similarity_score(item)
 
+    for item in nearby_comparables:
+        base_score = similarity_score(item)
+        distance_m = item.get("distance_m") or 1000
+        distance_score = max(0.0, 1.0 - distance_m / 1000.0)
+        item["similarity_score"] = round(
+            base_score * 0.85 + distance_score * 0.15,
+            4
+        )
+
     building_comparables.sort(
         key=lambda item: item["similarity_score"],
         reverse=True
     )
     street_comparables.sort(
+        key=lambda item: item["similarity_score"],
+        reverse=True
+    )
+    nearby_comparables.sort(
         key=lambda item: item["similarity_score"],
         reverse=True
     )
@@ -900,6 +993,7 @@ def valuation(
     comparable = (
         building_comparables
         + street_comparables
+        + nearby_comparables
     )
 
     if not comparable:
@@ -981,8 +1075,14 @@ def valuation(
         if item in building_comparables
     )
 
+    nearby_count = sum(
+        1
+        for item in comparable
+        if item in nearby_comparables
+    )
+
     street_count = (
-        len(comparable) - building_count
+        len(comparable) - building_count - nearby_count
     )
 
     comparable_count = len(comparable)
@@ -1037,10 +1137,11 @@ def valuation(
         "area": area,
         "target_building": target_building,
         "target_varis_code": target_varis_code or None,
-        "selection_method": "hierarchical_similarity_v2",
+        "selection_method": "hierarchical_geo_similarity_v3",
         "comparable_count": comparable_count,
         "building_comparable_count": building_count,
         "street_comparable_count": street_count,
+        "nearby_comparable_count": nearby_count,
         "target_coordinates": (
             {
                 "x": target_coordinates[0],
@@ -1060,6 +1161,14 @@ def valuation(
             "same_street_relaxed": sum(
                 1 for item in comparable
                 if item.get("selection_tier") == "same_street_relaxed"
+            ),
+            "nearby_500m": sum(
+                1 for item in comparable
+                if item.get("selection_tier") == "nearby_500m"
+            ),
+            "nearby_1000m": sum(
+                1 for item in comparable
+                if item.get("selection_tier") == "nearby_1000m"
             ),
         },
         "confidence": confidence,
