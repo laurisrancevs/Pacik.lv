@@ -786,6 +786,58 @@ def valuation(
         collect_street_comparables(20)
 
     # --------------------------------------------------
+    # 3. ĢEOGRĀFISKĀ TUVUMA SAGATAVOŠANA
+    # --------------------------------------------------
+
+    # VZD adrešu failā KOORD_X / KOORD_Y ir LKS-92 TM koordinātas metros.
+    # Izveidojam adreses -> koordinātu indeksu, lai nākamajā atlases līmenī
+    # varētu droši rēķināt reālu attālumu starp ēkām.
+    address_coordinates = {}
+
+    for address_row in addresses:
+        std = (address_row.get("STD", "") or "").casefold().strip()
+        if not std:
+            continue
+
+        x = parse_number(address_row.get("KOORD_X"))
+        y = parse_number(address_row.get("KOORD_Y"))
+
+        if x is not None and y is not None:
+            address_coordinates[std] = (x, y)
+
+    target_coordinates = None
+    for address_row in addresses:
+        std = (address_row.get("STD", "") or "").casefold().strip()
+        if std.startswith(query_address + ","):
+            x = parse_number(address_row.get("KOORD_X"))
+            y = parse_number(address_row.get("KOORD_Y"))
+            if x is not None and y is not None:
+                target_coordinates = (x, y)
+            break
+
+    def distance_to_target(address):
+        if target_coordinates is None:
+            return None
+
+        normalized = (address or "").casefold().strip()
+        coords = address_coordinates.get(normalized)
+
+        # Transaction addresses can omit the postcode while VZD STD includes it.
+        if coords is None:
+            for std, candidate_coords in address_coordinates.items():
+                without_postcode = std.split(", lv-")[0]
+                if normalized == without_postcode:
+                    coords = candidate_coords
+                    break
+
+        if coords is None:
+            return None
+
+        dx = coords[0] - target_coordinates[0]
+        dy = coords[1] - target_coordinates[1]
+        return round((dx * dx + dy * dy) ** 0.5)
+
+    # --------------------------------------------------
     # SAKĀRTOJAM PĒC LĪDZĪBAS
     # --------------------------------------------------
     # Darījumi konkrētajā mājā vienmēr paliek ar augstāko prioritāti.
@@ -989,6 +1041,13 @@ def valuation(
         "comparable_count": comparable_count,
         "building_comparable_count": building_count,
         "street_comparable_count": street_count,
+        "target_coordinates": (
+            {
+                "x": target_coordinates[0],
+                "y": target_coordinates[1],
+            }
+            if target_coordinates else None
+        ),
         "selection_tier_counts": {
             "same_building": sum(
                 1 for item in comparable
