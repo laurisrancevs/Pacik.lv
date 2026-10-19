@@ -166,9 +166,9 @@ app.add_middleware(
 )
 
 
-@app.get("/pacik-riga-hero.jpg", include_in_schema=False)
+@app.get("/pacik-riga-hero.png", include_in_schema=False)
 def pacik_riga_hero():
-    return FileResponse("/app/pacik-riga-hero.jpg", media_type="image/jpeg")
+    return FileResponse("/app/pacik-riga-hero.png", media_type="image/png")
 
 # --------------------------------------------------
 # HOME
