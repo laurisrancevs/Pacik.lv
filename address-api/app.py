@@ -20,9 +20,11 @@ FILE = "aw_eka.csv"
 BUILDINGS_DB_FILE = "buildings.db"
 BUILDINGS_DB_PATH = "/tmp/buildings.db"
 TRANSACTIONS_FILE = "transactions/TG.csv"
+SS_MARKET_FILE = "market/ss_listings.csv"
 
 addresses = []
 transactions = []
+ss_listings = []
 address_coordinates = {}
 address_coordinates_without_postcode = {}
 
@@ -35,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global addresses, transactions, address_coordinates, address_coordinates_without_postcode
+    global addresses, transactions, ss_listings, address_coordinates, address_coordinates_without_postcode
 
     try:
         client = storage.Client()
@@ -130,6 +132,23 @@ async def lifespan(app: FastAPI):
             len(transactions)
         )
 
+        # SS.COM market layer is deliberately loaded from a cached canonical CSV.
+        # We do not scrape SS.COM on every valuation request: this keeps PACIK fast,
+        # auditable and resilient to third-party layout/rate-limit changes.
+        ss_listings = []
+        try:
+            ss_blob = bucket.blob(SS_MARKET_FILE)
+            if ss_blob.exists(client):
+                ss_raw = ss_blob.download_as_bytes().decode("utf-8-sig")
+                ss_reader = csv.DictReader(io.StringIO(ss_raw), delimiter=",")
+                ss_listings = [row for row in ss_reader if row]
+                logger.info("Ielādēti %s SS.COM tirgus ieraksti", len(ss_listings))
+            else:
+                logger.warning("SS.COM tirgus kešs vēl nav pieejams: %s", SS_MARKET_FILE)
+        except Exception:
+            logger.exception("Neizdevās ielādēt SS.COM tirgus kešu; VZD modelis turpina strādāt")
+            ss_listings = []
+
     except Exception:
         logger.exception(
             "Neizdevās ielādēt adrešu vai darījumu datus"
@@ -137,6 +156,7 @@ async def lifespan(app: FastAPI):
 
         addresses = []
         transactions = []
+        ss_listings = []
         address_coordinates = {}
         address_coordinates_without_postcode = {}
 
@@ -206,7 +226,8 @@ def api_status():
         "status": "ok",
         "service": "PACIK.LV Address API",
         "loaded_records": len(addresses),
-        "transaction_records": len(transactions)
+        "transaction_records": len(transactions),
+        "ss_market_records": len(ss_listings)
     }
 
 
@@ -611,6 +632,57 @@ def valuation(
 
         except (ValueError, TypeError):
             return None
+
+    def collect_ss_market_signal():
+        """Return asking-price signal from cached SS.COM listings, never a sold-price substitute."""
+        if not ss_listings:
+            return None
+
+        candidates = []
+        target_coords = address_coordinates_without_postcode.get(query_address)
+        for row in ss_listings:
+            listing_city = (row.get("city", "") or "").casefold().strip()
+            if listing_city and city_query not in listing_city:
+                continue
+
+            listing_area = parse_number(row.get("area"))
+            listing_price = parse_number(row.get("price"))
+            listing_ppm2 = parse_number(row.get("price_per_m2"))
+            if listing_area is None:
+                continue
+            if listing_area < area * 0.70 or listing_area > area * 1.30:
+                continue
+            if listing_ppm2 is None and listing_price and listing_area > 0:
+                listing_ppm2 = listing_price / listing_area
+            if listing_ppm2 is None or listing_ppm2 < 300 or listing_ppm2 > 10000:
+                continue
+
+            # Prefer same street/building. Otherwise require coordinates within 2 km.
+            listing_address = (row.get("address", "") or "").casefold().strip()
+            same_building = bool(house_number and listing_address.startswith(f"{street_query} {house_number}"))
+            same_street = listing_address.startswith(street_query + " ")
+            distance_m = None
+            if not same_street and target_coords is not None:
+                try:
+                    lx = parse_number(row.get("x"))
+                    ly = parse_number(row.get("y"))
+                    if lx is not None and ly is not None:
+                        distance_m = ((lx-target_coords[0])**2 + (ly-target_coords[1])**2)**0.5
+                except Exception:
+                    distance_m = None
+                if distance_m is None or distance_m > 2000:
+                    continue
+
+            quality = 3 if same_building else (2 if same_street else 1)
+            candidates.append((quality, float(listing_ppm2)))
+
+        if len(candidates) < 3:
+            return None
+        candidates.sort(key=lambda x: x[0], reverse=True)
+        values = sorted(v for _, v in candidates[:20])
+        mid = len(values)//2
+        median = values[mid] if len(values)%2 else (values[mid-1]+values[mid])/2
+        return {"median_price_per_m2": round(median,2), "count": len(values)}
 
     def make_comparable(row, area_tolerance=0.20):
         address = (
@@ -1158,6 +1230,18 @@ def valuation(
         average_price_per_m2 * area
     )
 
+    # Current asking prices are a secondary market-temperature signal, not transactions.
+    # When at least 3 cached comparable SS.COM listings exist, allow only a conservative
+    # correction: 15% influence, capped to +/-8% of the VZD transaction-based estimate.
+    ss_market = collect_ss_market_signal()
+    transaction_estimated_value = estimated_value
+    ss_adjustment_percent = 0.0
+    if ss_market:
+        asking_ppm2 = ss_market["median_price_per_m2"]
+        raw_ratio = (asking_ppm2 / average_price_per_m2) - 1.0
+        ss_adjustment_percent = max(-0.08, min(0.08, raw_ratio * 0.15))
+        estimated_value = transaction_estimated_value * (1.0 + ss_adjustment_percent)
+
     # --------------------------------------------------
     # STATISTIKA + UZTICAMĪBA
     # --------------------------------------------------
@@ -1237,7 +1321,10 @@ def valuation(
         "area": area,
         "target_building": target_building,
         "target_varis_code": target_varis_code or None,
-        "selection_method": "hierarchical_geo_recency_v8_exact_building_anchor",
+        "selection_method": "hierarchical_geo_recency_v9_vzd_ss_market",
+        "transaction_estimated_value": round(transaction_estimated_value),
+        "ss_market": ss_market,
+        "ss_adjustment_percent": round(ss_adjustment_percent * 100, 2),
         "comparable_count": comparable_count,
         "building_comparable_count": building_count,
         "street_comparable_count": street_count,
