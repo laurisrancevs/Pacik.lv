@@ -481,6 +481,44 @@ def valuation(
 
     if target_varis_code:
         target_building = get_building_by_varis_code(target_varis_code)
+
+    # Safety guard: an address code can sometimes resolve to a non-residential
+    # building (for example a school) even though the user is valuing an
+    # apartment. Never return a confident apartment valuation from such a
+    # mismatch.
+    if target_building:
+        building_name = (
+            target_building.get("building_name", "") or ""
+        ).casefold()
+        use_kind = (
+            target_building.get("use_kind", "") or ""
+        ).casefold()
+
+        residential_markers = (
+            "dzīvojam",
+            "dzīvok",
+        )
+        is_residential = any(
+            marker in building_name or marker in use_kind
+            for marker in residential_markers
+        )
+
+        if not is_residential:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "building_type_mismatch",
+                    "message": (
+                        "Adrese ir atrasta, bet VZD piesaistītā ēka nav "
+                        "dzīvojamā ēka. Automātisks dzīvokļa vērtējums "
+                        "netiek veikts, lai nerādītu maldinošu cenu."
+                    ),
+                    "target_varis_code": target_varis_code,
+                    "building_name": target_building.get("building_name"),
+                    "use_kind": target_building.get("use_kind"),
+                },
+            )
+
     city_query = city.casefold().strip()
 
     query_parts = q.strip().rsplit(" ", 1)
