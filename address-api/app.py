@@ -704,12 +704,24 @@ def valuation(
                 building_comparables.append(item)
 
     # --------------------------------------------------
-    # 2. JA MĀJĀ PAR MAZ DATU, MEKLĒJAM TAJĀ PAŠĀ IELĀ
+    # 2. PAKĀPENISKA SALĪDZINĀMO ATLASE TAJĀ PAŠĀ IELĀ
     # --------------------------------------------------
+
+    # Hierarhija:
+    #   A) tā pati ēka;
+    #   B) tā pati iela, tas pats materiāls, ēkas vecums ±5 gadi;
+    #   C) ja datu vēl par maz, tā pati iela, tas pats materiāls,
+    #      ēkas vecums ±20 gadi.
+    #
+    # Plašāku apkaimes līmeni nepievienojam, kamēr datos nav drošas
+    # apkaimes/ģeogrāfiskās sasaistes. Tas ir apzināti konservatīvi.
+
+    for item in building_comparables:
+        item["selection_tier"] = "same_building"
 
     street_comparables = []
 
-    if len(building_comparables) < 5:
+    def collect_street_comparables(max_year_difference):
         for row in transactions:
             address = (
                 row.get(
@@ -718,34 +730,30 @@ def valuation(
                 )
                 or ""
             )
+            address_normalized = address.casefold().strip()
 
-            address_normalized = (
-                address.casefold().strip()
-            )
-
-            if street_query not in address_normalized:
+            # Require the actual street name at the beginning of the address,
+            # rather than accepting an arbitrary substring match.
+            if not address_normalized.startswith(street_query + " "):
                 continue
 
             if city_query not in address_normalized:
                 continue
 
             item = make_comparable(row)
-            
-
             if item is None:
                 continue
-                            # Ja zinām vērtējamās ēkas parametrus,
-            # atlasām līdzīga vecuma un materiāla ēkas
+
             if target_building:
-                target_year = parse_number(
+                target_year_local = parse_number(
                     target_building.get("exploit_year")
                 )
                 comparable_year = parse_number(
                     item.get("building_year")
                 )
 
-                if target_year and comparable_year:
-                    if abs(target_year - comparable_year) > 20:
+                if target_year_local and comparable_year:
+                    if abs(target_year_local - comparable_year) > max_year_difference:
                         continue
 
                 target_material = normalize_material(
@@ -755,26 +763,27 @@ def valuation(
                     item.get("building_material", "")
                 )
 
-                # VZD and transaction datasets describe the same material
-                # differently (for example "mūra" vs "ķieģeļu mūris").
-                # Compare normalized groups instead of raw text.
                 if target_material and comparable_material:
                     if target_material != comparable_material:
                         continue
 
-            if is_duplicate(
-                item,
-                building_comparables
-            ):
+            if is_duplicate(item, building_comparables):
+                continue
+            if is_duplicate(item, street_comparables):
                 continue
 
-            if is_duplicate(
-                item,
-                street_comparables
-            ):
-                continue
-
+            item["selection_tier"] = (
+                "same_street_strict"
+                if max_year_difference <= 5
+                else "same_street_relaxed"
+            )
             street_comparables.append(item)
+
+    if len(building_comparables) < 5:
+        collect_street_comparables(5)
+
+    if len(building_comparables) + len(street_comparables) < 5:
+        collect_street_comparables(20)
 
     # --------------------------------------------------
     # SAKĀRTOJAM PĒC LĪDZĪBAS
@@ -976,10 +985,24 @@ def valuation(
         "area": area,
         "target_building": target_building,
         "target_varis_code": target_varis_code or None,
-        "selection_method": "weighted_similarity_v1",
+        "selection_method": "hierarchical_similarity_v2",
         "comparable_count": comparable_count,
         "building_comparable_count": building_count,
         "street_comparable_count": street_count,
+        "selection_tier_counts": {
+            "same_building": sum(
+                1 for item in comparable
+                if item.get("selection_tier") == "same_building"
+            ),
+            "same_street_strict": sum(
+                1 for item in comparable
+                if item.get("selection_tier") == "same_street_strict"
+            ),
+            "same_street_relaxed": sum(
+                1 for item in comparable
+                if item.get("selection_tier") == "same_street_relaxed"
+            ),
+        },
         "confidence": confidence,
         "confidence_label": confidence_label,
         "confidence_points": confidence_points,
