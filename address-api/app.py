@@ -950,3 +950,28 @@ def building_by_address(
         status_code=404,
         detail="Adrese nav atrasta"
     )
+@app.get("/building-db-columns")
+def building_db_columns():
+    con = sqlite3.connect(BUILDINGS_DB_PATH)
+
+    try:
+        columns = con.execute(
+            "PRAGMA table_info(buildings)"
+        ).fetchall()
+
+        sample = con.execute(
+            "SELECT * FROM buildings LIMIT 5"
+        ).fetchall()
+
+        column_names = [column[1] for column in columns]
+
+        return {
+            "columns": column_names,
+            "sample": [
+                dict(zip(column_names, row))
+                for row in sample
+            ]
+        }
+
+    finally:
+        con.close()
