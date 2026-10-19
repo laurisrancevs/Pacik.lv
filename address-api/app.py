@@ -21,10 +21,12 @@ BUILDINGS_DB_FILE = "buildings.db"
 BUILDINGS_DB_PATH = "/tmp/buildings.db"
 TRANSACTIONS_FILE = "transactions/TG.csv"
 SS_MARKET_FILE = "market/ss_listings.csv"
+CADASTRE_FEATURES_FILE = "cadastre/property_features.csv"
 
 addresses = []
 transactions = []
 ss_listings = []
+cadastre_features = {}
 address_coordinates = {}
 address_coordinates_without_postcode = {}
 
@@ -37,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global addresses, transactions, ss_listings, address_coordinates, address_coordinates_without_postcode
+    global addresses, transactions, ss_listings, cadastre_features, address_coordinates, address_coordinates_without_postcode
 
     try:
         client = storage.Client()
@@ -149,6 +151,26 @@ async def lifespan(app: FastAPI):
             logger.exception("Neizdevās ielādēt SS.COM tirgus kešu; VZD modelis turpina strādāt")
             ss_listings = []
 
+        # Enriched cadastral layer. A preprocessing job can join VZD Property,
+        # Parcel, PremiseGroup, Encumbrance and Valuation datasets into this
+        # compact address-keyed CSV. Missing enrichment must never stop valuation.
+        cadastre_features = {}
+        try:
+            cad_blob = bucket.blob(CADASTRE_FEATURES_FILE)
+            if cad_blob.exists(client):
+                cad_raw = cad_blob.download_as_bytes().decode("utf-8-sig")
+                cad_reader = csv.DictReader(io.StringIO(cad_raw), delimiter=",")
+                for row in cad_reader:
+                    key = (row.get("address", "") or "").casefold().strip()
+                    if key:
+                        cadastre_features[key] = row
+                logger.info("Ielādēti %s bagātināti Kadastra ieraksti", len(cadastre_features))
+            else:
+                logger.warning("Kadastra bagātinājuma fails vēl nav pieejams: %s", CADASTRE_FEATURES_FILE)
+        except Exception:
+            logger.exception("Neizdevās ielādēt Kadastra bagātinājumu; pamatmodelis turpina strādāt")
+            cadastre_features = {}
+
     except Exception:
         logger.exception(
             "Neizdevās ielādēt adrešu vai darījumu datus"
@@ -157,6 +179,7 @@ async def lifespan(app: FastAPI):
         addresses = []
         transactions = []
         ss_listings = []
+        cadastre_features = {}
         address_coordinates = {}
         address_coordinates_without_postcode = {}
 
@@ -227,7 +250,8 @@ def api_status():
         "service": "PACIK.LV Address API",
         "loaded_records": len(addresses),
         "transaction_records": len(transactions),
-        "ss_market_records": len(ss_listings)
+        "ss_market_records": len(ss_listings),
+        "cadastre_feature_records": len(cadastre_features)
     }
 
 
@@ -1321,8 +1345,9 @@ def valuation(
         "area": area,
         "target_building": target_building,
         "target_varis_code": target_varis_code or None,
-        "selection_method": "hierarchical_geo_recency_v9_vzd_ss_market",
+        "selection_method": "hierarchical_geo_recency_v10_cadastre_enriched",
         "transaction_estimated_value": round(transaction_estimated_value),
+        "cadastre_features": cadastre_features.get(query_address),
         "ss_market": ss_market,
         "ss_adjustment_percent": round(ss_adjustment_percent * 100, 2),
         "comparable_count": comparable_count,
