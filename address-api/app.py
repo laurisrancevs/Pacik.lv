@@ -910,11 +910,8 @@ def valuation(
         average_price_per_m2 * area
     )
 
-    estimated_min = estimated_value * 0.95
-    estimated_max = estimated_value * 1.05
-
     # --------------------------------------------------
-    # STATISTIKA
+    # STATISTIKA + UZTICAMĪBA
     # --------------------------------------------------
 
     building_count = sum(
@@ -927,6 +924,48 @@ def valuation(
         len(comparable) - building_count
     )
 
+    comparable_count = len(comparable)
+    average_similarity = (
+        sum(item.get("similarity_score", 0.0) for item in comparable)
+        / comparable_count
+    )
+
+    # Confidence reflects the evidence behind the estimate, not a guarantee
+    # of the final sale price. Exact-building transactions are especially
+    # valuable because location and building quality match directly.
+    confidence_points = 0
+
+    if comparable_count >= 10:
+        confidence_points += 2
+    elif comparable_count >= 5:
+        confidence_points += 1
+
+    if building_count >= 3:
+        confidence_points += 2
+    elif building_count >= 1:
+        confidence_points += 1
+
+    if average_similarity >= 1.20:
+        confidence_points += 2
+    elif average_similarity >= 0.70:
+        confidence_points += 1
+
+    if confidence_points >= 5:
+        confidence = "high"
+        confidence_label = "Augsta"
+        range_percent = 0.05
+    elif confidence_points >= 3:
+        confidence = "medium"
+        confidence_label = "Vidēja"
+        range_percent = 0.08
+    else:
+        confidence = "low"
+        confidence_label = "Zema"
+        range_percent = 0.12
+
+    estimated_min = estimated_value * (1.0 - range_percent)
+    estimated_max = estimated_value * (1.0 + range_percent)
+
     # --------------------------------------------------
     # ATBILDE
     # --------------------------------------------------
@@ -938,9 +977,14 @@ def valuation(
         "target_building": target_building,
         "target_varis_code": target_varis_code or None,
         "selection_method": "weighted_similarity_v1",
-        "comparable_count": len(comparable),
+        "comparable_count": comparable_count,
         "building_comparable_count": building_count,
         "street_comparable_count": street_count,
+        "confidence": confidence,
+        "confidence_label": confidence_label,
+        "confidence_points": confidence_points,
+        "average_similarity_score": round(average_similarity, 4),
+        "range_percent": round(range_percent * 100),
         "median_price_per_m2": round(
             median_price_per_m2,
             2
