@@ -226,7 +226,8 @@ try {
         "https://pacik-address-api-581028202745.europe-west1.run.app/valuation" +
         "?q=" + encodeURIComponent(addressForValuation) +
         "&area=" + encodeURIComponent(area) +
-        "&city=" + encodeURIComponent(city);
+        "&city=" + encodeURIComponent(city) +
+        "&property_type=" + encodeURIComponent(propertyType);
 
     const valuationResponse = await fetch(valuationUrl);
     const valuation = await valuationResponse.json();
@@ -235,7 +236,11 @@ try {
         const detail = valuation && valuation.detail;
         const message =
             detail && detail.code === "building_type_mismatch"
-                ? "Šim īpašuma tipam automātisku dzīvokļa vērtējumu šobrīd nevaram droši aprēķināt."
+                ? "Šajā adresē VZD dati nenorāda dzīvojamo ēku, tāpēc automātisku dzīvokļa vērtējumu nerādām."
+                : detail && detail.code === "unsupported_property_type"
+                ? "Automātiskais vērtējums šobrīd droši atbalsta dzīvokļus. Šim īpašuma tipam nepieciešama individuāla pārbaude."
+                : detail && detail.code === "insufficient_comparables"
+                ? "Šai adresei nav pietiekami daudz drošu salīdzināmo darījumu, tāpēc maldinošu cenu nerādām."
                 : "Šobrīd šai adresei automātisku vērtējumu nevaram droši aprēķināt.";
         throw new Error(message);
     }
