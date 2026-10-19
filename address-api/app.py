@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import HTMLResponse
-from fastapi.middleware.cors import CORSMiddleware\nfrom fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import storage
 
 
