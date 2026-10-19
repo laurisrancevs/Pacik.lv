@@ -612,7 +612,7 @@ def valuation(
         except (ValueError, TypeError):
             return None
 
-    def make_comparable(row):
+    def make_comparable(row, area_tolerance=0.20):
         address = (
             row.get(
                 "Adreses standartpieraksts_DTG",
@@ -642,8 +642,8 @@ def valuation(
             return None
 
         if (
-            apartment_area < area * 0.8
-            or apartment_area > area * 1.2
+            apartment_area < area * (1.0 - area_tolerance)
+            or apartment_area > area * (1.0 + area_tolerance)
         ):
             return None
 
@@ -916,7 +916,7 @@ def valuation(
 
     nearby_comparables = []
 
-    def collect_nearby_comparables(max_distance_m, max_year_difference=10, require_material=True, tier_name=None):
+    def collect_nearby_comparables(max_distance_m, max_year_difference=10, require_material=True, tier_name=None, area_tolerance=0.20):
         """Pakāpeniski paplašina ģeogrāfisko loku, saglabājot ēkas līdzību."""
         if target_coordinates is None:
             return
@@ -928,7 +928,7 @@ def valuation(
             if city_query not in address_normalized:
                 continue
 
-            item = make_comparable(row)
+            item = make_comparable(row, area_tolerance=area_tolerance)
             if item is None:
                 continue
 
@@ -965,20 +965,26 @@ def valuation(
 
     # A) ļoti līdzīgas ēkas 500 m rādiusā
     if evidence_count() < 5:
-        collect_nearby_comparables(500, 10, True, "nearby_500m_strict")
+        collect_nearby_comparables(500, 10, True, "nearby_500m_strict", 0.20)
 
     # B) ļoti līdzīgas ēkas 1 km rādiusā
     if evidence_count() < 5:
-        collect_nearby_comparables(1000, 15, True, "nearby_1000m_strict")
+        collect_nearby_comparables(1000, 15, True, "nearby_1000m_strict", 0.25)
 
     # C) plašāks apkaimes loks: līdz 2 km, līdzīgs vecums un materiāls
     if evidence_count() < 5:
-        collect_nearby_comparables(2000, 20, True, "nearby_2000m_similar")
+        collect_nearby_comparables(2000, 25, True, "nearby_2000m_similar", 0.35)
 
     # D) pēdējais drošais fallback: līdz 3 km, līdzīga vecuma dzīvojamās ēkas.
     # Materiāls drīkst atšķirties, bet šiem darījumiem būs zemāks svars.
     if evidence_count() < 3:
-        collect_nearby_comparables(3000, 25, False, "nearby_3000m_fallback")
+        collect_nearby_comparables(3000, 35, False, "nearby_3000m_fallback", 0.45)
+
+    # E) Sparse-data fallback for unusual/large apartments:
+    # widen to 5 km and ±50% area, but keep only valid apartment transactions.
+    # These receive a strong tier penalty and therefore cannot dominate stronger evidence.
+    if evidence_count() < 3:
+        collect_nearby_comparables(5000, 50, False, "nearby_5000m_sparse", 0.50)
 
     # --------------------------------------------------
     # SAKĀRTOJAM PĒC LĪDZĪBAS
@@ -1037,6 +1043,7 @@ def valuation(
             "nearby_1000m_strict": 0.92,
             "nearby_2000m_similar": 0.82,
             "nearby_3000m_fallback": 0.68,
+            "nearby_5000m_sparse": 0.52,
         }.get(item.get("selection_tier"), 0.75)
 
         item["similarity_score"] = round(
@@ -1167,7 +1174,7 @@ def valuation(
     comparable_count = len(comparable)
     broad_fallback_count = sum(
         1 for item in comparable
-        if item.get("selection_tier") in {"nearby_2000m_similar", "nearby_3000m_fallback"}
+        if item.get("selection_tier") in {"nearby_2000m_similar", "nearby_3000m_fallback", "nearby_5000m_sparse"}
     )
     average_similarity = (
         sum(item.get("similarity_score", 0.0) for item in comparable)
@@ -1223,7 +1230,7 @@ def valuation(
         "area": area,
         "target_building": target_building,
         "target_varis_code": target_varis_code or None,
-        "selection_method": "hierarchical_geo_recency_v6_progressive",
+        "selection_method": "hierarchical_geo_recency_v7_sparse_safe",
         "comparable_count": comparable_count,
         "building_comparable_count": building_count,
         "street_comparable_count": street_count,
