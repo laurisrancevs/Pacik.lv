@@ -91,7 +91,9 @@ def init_db():
 def index_xml(con, dataset, stream):
     count = 0
     # End-event streaming keeps memory bounded even for very large VZD XML files.
-    for event, elem in ET.iterparse(stream, events=("end",)):
+    for event, elem in ET.iterparse(stream, events=("end",)): 
+        if local_name(elem.tag) not in {"PremiseGroupItemData", "ParcelItemData", "EncumbranceItemData", "ValuationItemData"}:
+            continue
         # VZD object records carry identifiers such as *CadastreNr and
         # *VARIScode. Index the record that directly contains those identifier
         # elements; nested descriptive structures are kept in the JSON payload.
@@ -151,9 +153,13 @@ def build():
 
     con.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('schema_version','1')")
     con.commit()
+    con.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    con.execute("PRAGMA journal_mode=DELETE")
     con.execute("VACUUM")
     con.close()
 
+    if not totals.get("premise_group"):
+        raise RuntimeError("No premise group records; index not uploaded")
     out = bucket.blob(OUTPUT_OBJECT)
     out.upload_from_filename(LOCAL_DB, content_type="application/x-sqlite3")
     log.info("Uploaded gs://%s/%s: %s", BUCKET, OUTPUT_OBJECT, totals)
