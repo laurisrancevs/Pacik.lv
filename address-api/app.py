@@ -751,27 +751,48 @@ def valuation(
             target_building.get("exploit_year")
         )
 
-    def similarity_key(item):
+    def similarity_score(item, same_building=False):
         comparable_year = parse_number(
             item.get("building_year")
         )
 
+        area_difference = abs(item["area"] - area) / area
+        area_score = max(0.0, 1.0 - area_difference / 0.20)
+
         if target_year is not None and comparable_year is not None:
             year_difference = abs(target_year - comparable_year)
+            year_score = max(0.0, 1.0 - year_difference / 20.0)
         else:
-            year_difference = 999
+            year_score = 0.25
 
-        area_difference = abs(item["area"] - area) / area
-
-        return (
-            year_difference,
-            area_difference
+        # Area is the strongest apartment-level signal in the data we have.
+        # Building age adds context; an exact-building transaction gets a
+        # substantial bonus because location/building quality match exactly.
+        score = (
+            area_score * 0.60
+            + year_score * 0.40
+            + (1.0 if same_building else 0.0)
         )
 
+        return round(score, 4)
+
+    for item in building_comparables:
+        item["similarity_score"] = similarity_score(
+            item,
+            same_building=True
+        )
+
+    for item in street_comparables:
+        item["similarity_score"] = similarity_score(item)
+
     building_comparables.sort(
-        key=lambda item: abs(item["area"] - area) / area
+        key=lambda item: item["similarity_score"],
+        reverse=True
     )
-    street_comparables.sort(key=similarity_key)
+    street_comparables.sort(
+        key=lambda item: item["similarity_score"],
+        reverse=True
+    )
 
     # --------------------------------------------------
     # APVIENOJAM SALĪDZINĀMOS
@@ -833,10 +854,19 @@ def valuation(
     # APRĒĶINS
     # --------------------------------------------------
 
-    average_price_per_m2 = sum(
-        item["price_per_m2"]
+    # Weighted estimate: the most similar transactions influence the
+    # valuation more than weaker comparables. Keep a small minimum weight so
+    # valid filtered transactions still contribute without dominating.
+    weights = [
+        max(item.get("similarity_score", 0.0), 0.10)
         for item in comparable
-    ) / len(comparable)
+    ]
+    total_weight = sum(weights)
+
+    average_price_per_m2 = sum(
+        item["price_per_m2"] * weight
+        for item, weight in zip(comparable, weights)
+    ) / total_weight
 
     estimated_value = (
         average_price_per_m2 * area
@@ -869,7 +899,7 @@ def valuation(
         "area": area,
         "target_building": target_building,
         "target_varis_code": target_varis_code or None,
-        "selection_method": "same_building_then_similar_year_and_area",
+        "selection_method": "weighted_similarity_v1",
         "comparable_count": len(comparable),
         "building_comparable_count": building_count,
         "street_comparable_count": street_count,
