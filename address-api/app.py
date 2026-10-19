@@ -916,15 +916,13 @@ def valuation(
 
     nearby_comparables = []
 
-    def collect_nearby_comparables(max_distance_m):
+    def collect_nearby_comparables(max_distance_m, max_year_difference=10, require_material=True, tier_name=None):
+        """Pakāpeniski paplašina ģeogrāfisko loku, saglabājot ēkas līdzību."""
         if target_coordinates is None:
             return
 
         for row in transactions:
-            address = (
-                row.get("Adreses standartpieraksts_DTG", "")
-                or ""
-            )
+            address = row.get("Adreses standartpieraksts_DTG", "") or ""
             address_normalized = address.casefold().strip()
 
             if city_query not in address_normalized:
@@ -938,8 +936,6 @@ def valuation(
             if distance_m is None or distance_m > max_distance_m:
                 continue
 
-            # Exact-building and same-street transactions already have a
-            # higher-priority tier and must not be duplicated here.
             if is_duplicate(item, building_comparables):
                 continue
             if is_duplicate(item, street_comparables):
@@ -948,47 +944,41 @@ def valuation(
                 continue
 
             if target_building:
-                target_year_local = parse_number(
-                    target_building.get("exploit_year")
-                )
-                comparable_year = parse_number(
-                    item.get("building_year")
-                )
-
+                target_year_local = parse_number(target_building.get("exploit_year"))
+                comparable_year = parse_number(item.get("building_year"))
                 if target_year_local and comparable_year:
-                    if abs(target_year_local - comparable_year) > 10:
+                    if abs(target_year_local - comparable_year) > max_year_difference:
                         continue
 
-                target_material = normalize_material(
-                    target_building.get("material", "")
-                )
-                comparable_material = normalize_material(
-                    item.get("building_material", "")
-                )
-                if target_material and comparable_material:
-                    if target_material != comparable_material:
+                if require_material:
+                    target_material = normalize_material(target_building.get("material", ""))
+                    comparable_material = normalize_material(item.get("building_material", ""))
+                    if target_material and comparable_material and target_material != comparable_material:
                         continue
 
             item["distance_m"] = distance_m
-            item["selection_tier"] = (
-                "nearby_500m"
-                if max_distance_m <= 500
-                else "nearby_1000m"
-            )
+            item["selection_tier"] = tier_name or f"nearby_{max_distance_m}m"
             nearby_comparables.append(item)
 
-    # Only widen geographically when the higher-quality same-building /
-    # same-street evidence is insufficient.
-    if len(building_comparables) + len(street_comparables) < 5:
-        collect_nearby_comparables(500)
+    def evidence_count():
+        return len(building_comparables) + len(street_comparables) + len(nearby_comparables)
 
-    if (
-        len(building_comparables)
-        + len(street_comparables)
-        + len(nearby_comparables)
-        < 5
-    ):
-        collect_nearby_comparables(1000)
+    # A) ļoti līdzīgas ēkas 500 m rādiusā
+    if evidence_count() < 5:
+        collect_nearby_comparables(500, 10, True, "nearby_500m_strict")
+
+    # B) ļoti līdzīgas ēkas 1 km rādiusā
+    if evidence_count() < 5:
+        collect_nearby_comparables(1000, 15, True, "nearby_1000m_strict")
+
+    # C) plašāks apkaimes loks: līdz 2 km, līdzīgs vecums un materiāls
+    if evidence_count() < 5:
+        collect_nearby_comparables(2000, 20, True, "nearby_2000m_similar")
+
+    # D) pēdējais drošais fallback: līdz 3 km, līdzīga vecuma dzīvojamās ēkas.
+    # Materiāls drīkst atšķirties, bet šiem darījumiem būs zemāks svars.
+    if evidence_count() < 3:
+        collect_nearby_comparables(3000, 25, False, "nearby_3000m_fallback")
 
     # --------------------------------------------------
     # SAKĀRTOJAM PĒC LĪDZĪBAS
@@ -1039,10 +1029,18 @@ def valuation(
 
     for item in nearby_comparables:
         base_score = similarity_score(item)
-        distance_m = item.get("distance_m") or 1000
-        distance_score = max(0.0, 1.0 - distance_m / 1000.0)
+        distance_m = item.get("distance_m") or 3000
+        distance_score = max(0.0, 1.0 - distance_m / 3000.0)
+
+        tier_penalty = {
+            "nearby_500m_strict": 1.00,
+            "nearby_1000m_strict": 0.92,
+            "nearby_2000m_similar": 0.82,
+            "nearby_3000m_fallback": 0.68,
+        }.get(item.get("selection_tier"), 0.75)
+
         item["similarity_score"] = round(
-            base_score * 0.85 + distance_score * 0.15,
+            (base_score * 0.82 + distance_score * 0.18) * tier_penalty,
             4
         )
 
@@ -1167,6 +1165,10 @@ def valuation(
     )
 
     comparable_count = len(comparable)
+    broad_fallback_count = sum(
+        1 for item in comparable
+        if item.get("selection_tier") in {"nearby_2000m_similar", "nearby_3000m_fallback"}
+    )
     average_similarity = (
         sum(item.get("similarity_score", 0.0) for item in comparable)
         / comparable_count
@@ -1191,6 +1193,9 @@ def valuation(
         confidence_points += 2
     elif average_similarity >= 0.70:
         confidence_points += 1
+
+    if broad_fallback_count > 0:
+        confidence_points = min(confidence_points, 4)
 
     if confidence_points >= 5:
         confidence = "high"
@@ -1218,7 +1223,7 @@ def valuation(
         "area": area,
         "target_building": target_building,
         "target_varis_code": target_varis_code or None,
-        "selection_method": "hierarchical_geo_recency_v5_safe",
+        "selection_method": "hierarchical_geo_recency_v6_progressive",
         "comparable_count": comparable_count,
         "building_comparable_count": building_count,
         "street_comparable_count": street_count,
