@@ -22,6 +22,8 @@ TRANSACTIONS_FILE = "transactions/TG.csv"
 
 addresses = []
 transactions = []
+address_coordinates = {}
+address_coordinates_without_postcode = {}
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global addresses, transactions
+    global addresses, transactions, address_coordinates, address_coordinates_without_postcode
 
     try:
         client = storage.Client()
@@ -64,6 +66,33 @@ async def lifespan(app: FastAPI):
         logger.info(
             "Ielādēti %s adrešu ieraksti",
             len(addresses)
+        )
+
+        # Build coordinate indexes once at startup. Valuation requests must not
+        # rebuild or linearly scan all ~611k addresses for every comparable.
+        address_coordinates = {}
+        address_coordinates_without_postcode = {}
+
+        for row in addresses:
+            std = (row.get("STD", "") or "").casefold().strip()
+            if not std:
+                continue
+
+            try:
+                x_raw = str(row.get("KOORD_X", "") or "").strip().replace(" ", "").replace(",", ".")
+                y_raw = str(row.get("KOORD_Y", "") or "").strip().replace(" ", "").replace(",", ".")
+                if not x_raw or not y_raw:
+                    continue
+                coords = (float(x_raw), float(y_raw))
+            except (ValueError, TypeError):
+                continue
+
+            address_coordinates[std] = coords
+            address_coordinates_without_postcode[std.split(", lv-")[0]] = coords
+
+        logger.info(
+            "Izveidots koordinātu indekss %s adresēm",
+            len(address_coordinates)
         )
 
         # TRANSACTION DATA
@@ -107,6 +136,8 @@ async def lifespan(app: FastAPI):
 
         addresses = []
         transactions = []
+        address_coordinates = {}
+        address_coordinates_without_postcode = {}
 
     yield
 
@@ -823,30 +854,14 @@ def valuation(
     # 3. ĢEOGRĀFISKĀ TUVUMA SAGATAVOŠANA
     # --------------------------------------------------
 
-    # VZD adrešu failā KOORD_X / KOORD_Y ir LKS-92 TM koordinātas metros.
-    # Izveidojam adreses -> koordinātu indeksu, lai nākamajā atlases līmenī
-    # varētu droši rēķināt reālu attālumu starp ēkām.
-    address_coordinates = {}
-
-    for address_row in addresses:
-        std = (address_row.get("STD", "") or "").casefold().strip()
-        if not std:
-            continue
-
-        x = parse_number(address_row.get("KOORD_X"))
-        y = parse_number(address_row.get("KOORD_Y"))
-
-        if x is not None and y is not None:
-            address_coordinates[std] = (x, y)
-
+    # Coordinate indexes are built once during application startup.
+    # Lookup is O(1) instead of rebuilding/scanning ~611k addresses per request.
     target_coordinates = None
+
     for address_row in addresses:
         std = (address_row.get("STD", "") or "").casefold().strip()
         if std.startswith(query_address + ","):
-            x = parse_number(address_row.get("KOORD_X"))
-            y = parse_number(address_row.get("KOORD_Y"))
-            if x is not None and y is not None:
-                target_coordinates = (x, y)
+            target_coordinates = address_coordinates.get(std)
             break
 
     def distance_to_target(address):
@@ -856,13 +871,10 @@ def valuation(
         normalized = (address or "").casefold().strip()
         coords = address_coordinates.get(normalized)
 
-        # Transaction addresses can omit the postcode while VZD STD includes it.
         if coords is None:
-            for std, candidate_coords in address_coordinates.items():
-                without_postcode = std.split(", lv-")[0]
-                if normalized == without_postcode:
-                    coords = candidate_coords
-                    break
+            coords = address_coordinates_without_postcode.get(
+                normalized.split(", lv-")[0]
+            )
 
         if coords is None:
             return None
@@ -1175,7 +1187,7 @@ def valuation(
         "area": area,
         "target_building": target_building,
         "target_varis_code": target_varis_code or None,
-        "selection_method": "hierarchical_geo_recency_v4",
+        "selection_method": "hierarchical_geo_recency_v4_fast",
         "comparable_count": comparable_count,
         "building_comparable_count": building_count,
         "street_comparable_count": street_count,
