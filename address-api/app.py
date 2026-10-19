@@ -576,13 +576,13 @@ def valuation(
                 ""
             ),
             "building_year": row.get(
-    "(B) Ekspluatācijas uzsākšanas gads(saraksts)_DTG_Z_E",
-    ""
-),
-"building_material": row.get(
-    "(B) Ārsienu un karkasu materiāls(saraksts)_DTG_Z_E",
-    ""
-)
+                "(B) Ekspluatācijas uzsākšanas gads(saraksts)_DTG_Z_E",
+                ""
+            ),
+            "building_material": row.get(
+                "(B) Ārsienu un karkasu materiāls(saraksts)_DTG_Z_E",
+                ""
+            )
         }
 
     def normalize_material(value):
@@ -739,6 +739,41 @@ def valuation(
             street_comparables.append(item)
 
     # --------------------------------------------------
+    # SAKĀRTOJAM PĒC LĪDZĪBAS
+    # --------------------------------------------------
+    # Darījumi konkrētajā mājā vienmēr paliek ar augstāko prioritāti.
+    # Citu tās pašas ielas māju darījumus kārtojam pēc ēkas vecuma
+    # un dzīvokļa platības līdzības, nevis CSV faila nejaušās secības.
+
+    target_year = None
+    if target_building:
+        target_year = parse_number(
+            target_building.get("exploit_year")
+        )
+
+    def similarity_key(item):
+        comparable_year = parse_number(
+            item.get("building_year")
+        )
+
+        if target_year is not None and comparable_year is not None:
+            year_difference = abs(target_year - comparable_year)
+        else:
+            year_difference = 999
+
+        area_difference = abs(item["area"] - area) / area
+
+        return (
+            year_difference,
+            area_difference
+        )
+
+    building_comparables.sort(
+        key=lambda item: abs(item["area"] - area) / area
+    )
+    street_comparables.sort(key=similarity_key)
+
+    # --------------------------------------------------
     # APVIENOJAM SALĪDZINĀMOS
     # --------------------------------------------------
 
@@ -834,6 +869,7 @@ def valuation(
         "area": area,
         "target_building": target_building,
         "target_varis_code": target_varis_code or None,
+        "selection_method": "same_building_then_similar_year_and_area",
         "comparable_count": len(comparable),
         "building_comparable_count": building_count,
         "street_comparable_count": street_count,
