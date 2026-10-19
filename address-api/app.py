@@ -585,6 +585,24 @@ def valuation(
 )
         }
 
+    def normalize_material(value):
+        """Map VZD and transaction material labels to broad comparable groups."""
+        material = (value or "").casefold().strip()
+
+        if not material:
+            return ""
+
+        if "vieglbeton" in material:
+            return "lightweight_concrete"
+        if "dzelzsbeton" in material or "beton" in material:
+            return "concrete"
+        if "ķieģe" in material or "mūr" in material or "akmens" in material:
+            return "masonry"
+        if "koka" in material or material == "koks":
+            return "wood"
+
+        return material
+
     def is_duplicate(item, items):
         return any(
             existing["address"] == item["address"]
@@ -692,14 +710,16 @@ def valuation(
                     if abs(target_year - comparable_year) > 20:
                         continue
 
-                target_material = (
-                    target_building.get("material", "") or ""
-                ).casefold().strip()
+                target_material = normalize_material(
+                    target_building.get("material", "")
+                )
+                comparable_material = normalize_material(
+                    item.get("building_material", "")
+                )
 
-                comparable_material = (
-                    item.get("building_material", "") or ""
-                ).casefold().strip()
-
+                # VZD and transaction datasets describe the same material
+                # differently (for example "mūra" vs "ķieģeļu mūris").
+                # Compare normalized groups instead of raw text.
                 if target_material and comparable_material:
                     if target_material != comparable_material:
                         continue
@@ -812,6 +832,8 @@ def valuation(
         "query": q,
         "city": city,
         "area": area,
+        "target_building": target_building,
+        "target_varis_code": target_varis_code or None,
         "comparable_count": len(comparable),
         "building_comparable_count": building_count,
         "street_comparable_count": street_count,
