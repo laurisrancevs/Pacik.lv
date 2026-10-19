@@ -1135,11 +1135,18 @@ def valuation(
     for item in comparable:
         item["recency_weight"] = recency_weight(item)
 
-    weights = [
-        max(item.get("similarity_score", 0.0), 0.10)
-        * item.get("recency_weight", 0.70)
-        for item in comparable
-    ]
+    # Exact-building transactions are the strongest evidence. A transaction in
+    # the same building also captures micro-location, construction and common-area
+    # quality better than a merely nearby sale. Very close area matches get an
+    # additional anchor bonus; nearby/fallback sales stabilize rather than override it.
+    weights = []
+    for item in comparable:
+        base_weight = max(item.get("similarity_score", 0.0), 0.10) * item.get("recency_weight", 0.70)
+        if item.get("selection_tier") == "same_building":
+            area_gap = abs(item["area"] - area) / area
+            exact_area_bonus = 1.75 if area_gap <= 0.05 else (1.35 if area_gap <= 0.10 else 1.10)
+            base_weight *= 2.25 * exact_area_bonus
+        weights.append(base_weight)
     total_weight = sum(weights)
 
     average_price_per_m2 = sum(
@@ -1230,7 +1237,7 @@ def valuation(
         "area": area,
         "target_building": target_building,
         "target_varis_code": target_varis_code or None,
-        "selection_method": "hierarchical_geo_recency_v7_sparse_safe",
+        "selection_method": "hierarchical_geo_recency_v8_exact_building_anchor",
         "comparable_count": comparable_count,
         "building_comparable_count": building_count,
         "street_comparable_count": street_count,
