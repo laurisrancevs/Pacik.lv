@@ -191,9 +191,9 @@ try {
   });
 
 } catch (error) {
+  // Lead storage must never block the user's valuation flow.
+  // Keep the error in the console so Firebase permissions/config can be fixed separately.
   console.error("Saglabāšanas kļūda:", error);
-  alert("Neizdevās saglabāt pieteikumu. Lūdzu, mēģini vēlreiz.");
-  return;
 }
 document.getElementById("step2").style.display = "none";
 document.getElementById("step3").style.display = "block";
