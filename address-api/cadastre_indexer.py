@@ -12,6 +12,7 @@ from google.cloud import storage
 
 BUCKET = os.getenv("PACIK_BUCKET", "pacik-lv-address-data")
 SOURCES = {
+    "building": "cadastre/building.zip",
     "premise_group": "cadastre/premisegroup.zip",
     "valuation": "cadastre/valuation.zip",
     "parcel": "cadastre/parcel.zip",
@@ -98,7 +99,7 @@ def index_xml(con, dataset, stream):
     """
     count = 0
     record_tags = {
-        "PremiseGroupItemData", "ParcelItemData",
+        "BuildingItemData", "PremiseGroupItemData", "ParcelItemData",
         "EncumbranceItemData", "ValuationItemData",
     }
     stack = []
