@@ -86,35 +86,51 @@ def init_db():
 
 
 def index_xml(con, dataset, stream):
+    """Stream VZD XML without retaining previously processed records in RAM."""
     count = 0
-    # End-event streaming keeps memory bounded even for very large VZD XML files.
-    for event, elem in ET.iterparse(stream, events=("end",)): 
-        if local_name(elem.tag) not in {"PremiseGroupItemData", "ParcelItemData", "EncumbranceItemData", "ValuationItemData"}:
+    record_tags = {
+        "PremiseGroupItemData", "ParcelItemData",
+        "EncumbranceItemData", "ValuationItemData",
+    }
+    parser = ET.iterparse(stream, events=("start", "end"))
+    root = None
+    record_depth = 0
+    depth = 0
+    for event, elem in parser:
+        if event == "start":
+            depth += 1
+            if root is None:
+                root = elem
+            if record_depth == 0 and local_name(elem.tag) in record_tags:
+                record_depth = depth
             continue
-        # VZD object records carry identifiers such as *CadastreNr and
-        # *VARIScode. Index the record that directly contains those identifier
-        # elements; nested descriptive structures are kept in the JSON payload.
-        fields = flatten_leaves(elem)
-        cadastral, varis = identifiers(fields)
-        if not cadastral and not varis:
-            elem.clear()
-            continue
-        record_type = local_name(elem.tag)
-        payload = json.dumps(fields, ensure_ascii=False, separators=(",", ":"))
-        cad_values = sorted(cadastral) or [None]
-        varis_values = sorted(varis) or [None]
-        # One canonical row per detected identifier pair. Duplicates are harmless
-        # and preserve source evidence instead of guessing relationships.
-        for cad in cad_values:
-            for vc in varis_values:
+
+        if record_depth and depth == record_depth:
+            fields = flatten_leaves(elem)
+            cadastral, varis = identifiers(fields)
+            if cadastral or varis:
+                payload = json.dumps(fields, ensure_ascii=False, separators=(",", ":"))
+                # Avoid quadratic row multiplication when a record contains
+                # references to many other cadastral objects.
+                cad = min(cadastral) if cadastral else None
+                vc = min(varis) if varis else None
                 con.execute(
                     "INSERT INTO records(dataset,cadastral_id,varis_code,record_type,data_json) VALUES(?,?,?,?,?)",
-                    (dataset, cad, vc, record_type, payload),
+                    (dataset, cad, vc, local_name(elem.tag), payload),
                 )
                 count += 1
-        if count % 5000 == 0:
-            con.commit()
-        elem.clear()
+                if count % 2000 == 0:
+                    con.commit()
+                    log.info("%s: indexed %d records", dataset, count)
+            elem.clear()
+            # ElementTree otherwise retains every empty record under the root,
+            # exhausting Cloud Run's 4 GiB memory limit on large XML files.
+            if root is not None and root is not elem:
+                root.clear()
+            record_depth = 0
+        elif record_depth == 0:
+            elem.clear()
+        depth -= 1
     con.commit()
     return count
 
