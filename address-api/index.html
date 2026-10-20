@@ -27,6 +27,13 @@ footer{background:var(--navy);color:#d8e2e7;padding:44px 28px;text-align:center;
 @media(min-width:1400px){.hero{min-height:700px}.hero-inner{padding-top:82px}.hero h1{font-size:62px}}
 @media(max-width:800px){.links{display:none}.nav{justify-content:space-between}.hero{min-height:auto}.hero-inner{padding-top:55px}.hero h1{font-size:43px}.lead{font-size:19px}.mini-benefits{flex-direction:column;gap:12px}.searchbar{display:block}.searchbar button{width:100%;padding:14px}.hint{margin-left:0}.features,.steps{grid-template-columns:1fr 1fr}.consult{align-items:flex-start;flex-direction:column}#addressSuggestions{right:8px;top:58px}}
 @media(max-width:520px){.outline{display:none}.hero h1{font-size:38px}.features,.steps{grid-template-columns:1fr}.section{padding:44px 18px}.hero-inner,.nav{padding-left:18px;padding-right:18px}.form-shell{padding:24px 18px}}
+
+body.pacik-wizard-open{overflow:hidden}
+body.pacik-wizard-open #vertesana{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:24px 16px;background:linear-gradient(145deg,#071b2c,#114c57)}
+body.pacik-wizard-open #vertesana .form-shell{width:min(100%,720px);max-height:calc(100dvh - 48px);overflow-y:auto;margin:auto}
+#pacikWizardClose{display:none;float:right;width:auto;padding:6px 12px;margin:0 0 8px 12px;background:#eef2f2;color:#081426}
+body.pacik-wizard-open #pacikWizardClose{display:block}
+@media(max-width:520px){body.pacik-wizard-open #vertesana{padding:12px}body.pacik-wizard-open #vertesana .form-shell{max-height:calc(100dvh - 24px)}}
 </style>
 </head>
 <body>
@@ -50,7 +57,7 @@ footer{background:var(--navy);color:#d8e2e7;padding:44px 28px;text-align:center;
 <section class="section how" id="ka-tas-strada"><div class="wrap"><h2>Kā tas strādā?</h2><div class="steps"><div class="step"><div class="step-num">01</div><h3>Ievadi adresi</h3><p>Atrodam ēku un tās tehniskos datus VZD datos.</p></div><div class="step"><div class="step-num">02</div><h3>Pastāsti par īpašumu</h3><p>Norādi platību, stāvokli un dažas detaļas par īpašumu.</p></div><div class="step"><div class="step-num">03</div><h3>Saņem vērtējumu</h3><p>Salīdzinām ar līdzīgiem reāliem darījumiem un parādām orientējošu tirgus vērtību.</p></div></div></div></section>
 
 <section class="section" id="vertesana"><div class="form-shell">
-<div id="step2"><div class="progress">2. solis no 2</div><h2>Pastāsti nedaudz par īpašumu</h2><p>Adrese:</p><div id="selectedAddress" class="address-box"></div>
+<button id="pacikWizardClose" type="button" onclick="closePacikWizard()" aria-label="Aizvērt vērtēšanu">✕ Aizvērt</button><div id="step2"><div class="progress">2. solis no 2</div><h2>Pastāsti nedaudz par īpašumu</h2><p>Adrese:</p><div id="selectedAddress" class="address-box"></div>
 <select id="propertyType"><option value="">Īpašuma tips</option><option value="Dzīvoklis">Dzīvoklis</option><option value="Privātmāja">Privātmāja</option><option value="Zeme">Zeme</option><option value="Komercīpašums">Komercīpašums</option><option value="Cits">Cits</option></select>
 <input id="area" type="number" min="1" placeholder="Platība m²"><select id="condition"><option value="">Īpašuma stāvoklis</option><option value="Jauns / renovēts">Jauns / renovēts</option><option value="Labs">Labs</option><option value="Vidējs">Vidējs</option><option value="Nepieciešams remonts">Nepieciešams remonts</option></select>
 <input id="phone" type="tel" placeholder="Tālruņa numurs *"><input id="name" type="text" placeholder="Vārds (nav obligāti)"><input id="email" type="email" placeholder="E-pasts (nav obligāti)">
@@ -99,6 +106,8 @@ addressInput.addEventListener("input", async function () {
         console.error("Adrešu meklēšanas kļūda:", error);
     }
 });
+    function openPacikWizard() { document.body.classList.add("pacik-wizard-open"); }
+    function closePacikWizard() { document.body.classList.remove("pacik-wizard-open"); document.getElementById("step2").style.display="none"; document.getElementById("step3").style.display="none"; document.getElementById("step1").style.display="block"; }
     function nextStep() {
 
       const address =
@@ -116,7 +125,7 @@ addressInput.addEventListener("input", async function () {
 
       document.getElementById("step2").style.display =
         "block";
-      document.getElementById("vertesana").scrollIntoView({behavior:"smooth", block:"start"});
+      openPacikWizard();
     }
 
 
@@ -126,6 +135,7 @@ addressInput.addEventListener("input", async function () {
         "none";
 
       document.getElementById("step1").style.display = "block";
+      closePacikWizard();
     }
 
 
@@ -206,6 +216,7 @@ submitButton.disabled = true;
 submitButton.textContent = "Aprēķinām vērtību…";
 document.getElementById("step2").style.display = "none";
 document.getElementById("step3").style.display = "block";
+openPacikWizard();
 document.getElementById("valuationResult").textContent = "Aprēķinām...";
 document.getElementById("valuationInfo").textContent =
     "Salīdzinām īpašumu ar reāliem nekustamā īpašuma darījumiem.";
