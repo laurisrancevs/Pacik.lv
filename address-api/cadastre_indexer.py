@@ -1,3 +1,4 @@
+import gc
 import json
 import logging
 import os
@@ -69,6 +70,9 @@ def init_db():
     con.executescript("""
     PRAGMA journal_mode=WAL;
     PRAGMA synchronous=NORMAL;
+    PRAGMA cache_size=-8192;
+    PRAGMA mmap_size=0;
+    PRAGMA temp_store=FILE;
     CREATE TABLE IF NOT EXISTS records (
       id INTEGER PRIMARY KEY,
       dataset TEXT NOT NULL,
@@ -86,52 +90,61 @@ def init_db():
 
 
 def index_xml(con, dataset, stream):
-    """Stream VZD XML without retaining previously processed records in RAM."""
+    """Incrementally parse XML and discard completed sibling subtrees.
+
+    VZD files can contain millions of nodes. A streaming parser alone does
+    not free the root's accumulated children; remove completed siblings
+    throughout the tree, including inside large record containers.
+    """
     count = 0
     record_tags = {
         "PremiseGroupItemData", "ParcelItemData",
         "EncumbranceItemData", "ValuationItemData",
     }
-    parser = ET.iterparse(stream, events=("start", "end"))
-    root = None
-    record_depth = 0
-    depth = 0
-    for event, elem in parser:
+    stack = []
+    record_depth = None
+    for event, elem in ET.iterparse(stream, events=("start", "end")):
         if event == "start":
-            depth += 1
-            if root is None:
-                root = elem
-            if record_depth == 0 and local_name(elem.tag) in record_tags:
-                record_depth = depth
+            stack.append(elem)
+            if record_depth is None and local_name(elem.tag) in record_tags:
+                record_depth = len(stack)
             continue
 
-        if record_depth and depth == record_depth:
+        is_record_end = record_depth is not None and len(stack) == record_depth
+        if is_record_end:
             fields = flatten_leaves(elem)
             cadastral, varis = identifiers(fields)
             if cadastral or varis:
                 payload = json.dumps(fields, ensure_ascii=False, separators=(",", ":"))
-                # Avoid quadratic row multiplication when a record contains
-                # references to many other cadastral objects.
-                cad = min(cadastral) if cadastral else None
-                vc = min(varis) if varis else None
                 con.execute(
                     "INSERT INTO records(dataset,cadastral_id,varis_code,record_type,data_json) VALUES(?,?,?,?,?)",
-                    (dataset, cad, vc, local_name(elem.tag), payload),
+                    (
+                        dataset,
+                        min(cadastral) if cadastral else None,
+                        min(varis) if varis else None,
+                        local_name(elem.tag),
+                        payload,
+                    ),
                 )
                 count += 1
                 if count % 2000 == 0:
                     con.commit()
                     log.info("%s: indexed %d records", dataset, count)
+            record_depth = None
+
+        # Never discard descendants of a record before flatten_leaves()
+        # has extracted them. Once a record ends, discard it immediately.
+        if record_depth is None:
             elem.clear()
-            # ElementTree otherwise retains every empty record under the root,
-            # exhausting Cloud Run's 4 GiB memory limit on large XML files.
-            if root is not None and root is not elem:
-                root.clear()
-            record_depth = 0
-        elif record_depth == 0:
-            elem.clear()
-        depth -= 1
+            if len(stack) > 1:
+                parent = stack[-2]
+                # The finished element is the last appended child. Remove
+                # it so even very large wrapper elements stay bounded.
+                if len(parent) and parent[-1] is elem:
+                    parent.remove(elem)
+        stack.pop()
     con.commit()
+    gc.collect()
     return count
 
 
@@ -156,9 +169,11 @@ def build():
             with zipfile.ZipFile(local_zip) as zf:
                 xml_names = [n for n in zf.namelist() if n.lower().endswith(".xml")]
                 log.info("%s: %s XML files", dataset, len(xml_names))
-                for name in xml_names:
+                for file_number, name in enumerate(xml_names, 1):
+                    log.info("%s: parsing XML %d/%d: %s", dataset, file_number, len(xml_names), name)
                     with zf.open(name) as source:
                         total += index_xml(con, dataset, source)
+                    log.info("%s: finished XML %d/%d; %d records", dataset, file_number, len(xml_names), total)
             totals[dataset] = total
             con.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES(?,?)",
                         (f"records_{dataset}", str(total)))
