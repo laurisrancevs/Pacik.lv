@@ -12,7 +12,7 @@ from google.cloud import storage
 
 BUCKET = os.getenv("PACIK_BUCKET", "pacik-lv-address-data")
 SOURCES = {
-    "building": "cadastre/building.zip",
+    "building": "building.zip",
     "premise_group": "cadastre/premisegroup.zip",
     "valuation": "cadastre/valuation.zip",
     "parcel": "cadastre/parcel.zip",
